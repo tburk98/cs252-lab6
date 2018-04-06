@@ -1,0 +1,23 @@
+{
+  "name": "cs252-lab6",
+  "version": "1.0.0",
+  "description": "Web application for CS 252 Spring 2018",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdhartman/cs252-lab6.git"
+  },
+  "author": "Justin Hartman, Mason Wesolek, Theo Burkhart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jdhartman/cs252-lab6/issues"
+  },
+  "homepage": "https://github.com/jdhartman/cs252-lab6#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "socket.io": "^2.1.0"
+  }
+}
