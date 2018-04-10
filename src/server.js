@@ -10,7 +10,7 @@ var io = socketIO(server);
 var delta, velocity, lastFrame;
 velocity = .15;
 
-app.set('port', 4321);
+app.set('port', 80);
 app.use('/client', express.static(__dirname + '/client'));
 
 app.get('/', function(request, response) {
