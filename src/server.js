@@ -6,11 +6,13 @@ var socketIO = require('socket.io');
 var app = express();
 var server = http.Server(app);
 var io = socketIO(server);
+require('dotenv').config();
+
 
 var delta, velocity, lastFrame;
 velocity = .15;
 
-app.set('port', 80);
+app.set('port', process.env.PORT || 4321);
 app.use('/client', express.static(__dirname + '/client'));
 
 app.get('/', function(request, response) {
@@ -18,7 +20,7 @@ app.get('/', function(request, response) {
 });
 
 server.listen(4321, function() {
-	console.log('Server has begun on port 4321');
+	console.log('Server has begun on port' + process.env.PORT || 4321);
 });
 
 var players = {};
