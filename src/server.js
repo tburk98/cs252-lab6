@@ -8,19 +8,20 @@ var server = http.Server(app);
 var io = socketIO(server);
 require('dotenv').config();
 
+const PORT = process.env.PORT || 4321;
 
 var delta, velocity, lastFrame;
 velocity = .15;
 
-app.set('port', process.env.PORT || 4321);
+app.set('port', PORT);
 app.use('/client', express.static(__dirname + '/client'));
 
 app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname, '/client/index.html'));
 });
 
-server.listen(4321, function() {
-	console.log('Server has begun on port' + process.env.PORT || 4321);
+server.listen(PORT, function() {
+	console.log('Server has begun on port' + PORT);
 });
 
 var players = {};
