@@ -5,8 +5,20 @@
 	<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-	Tron game
 	<canvas id="canvas"></canvas>
+	<script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
+	<script>
+	  // Initialize Firebase
+	  var config = {
+	    apiKey: "AIzaSyBZqB2wfKDRPaChPA0BHvLEHKQOF8nD53g",
+	    authDomain: "cs252-lab6-tron.firebaseapp.com",
+	    databaseURL: "https://cs252-lab6-tron.firebaseio.com",
+	    projectId: "cs252-lab6-tron",
+	    storageBucket: "",
+	    messagingSenderId: "721219200275"
+	  };
+	  firebase.initializeApp(config);
+	</script>
 	<script src="/client/game.js"></script>
 </body>
 </html>

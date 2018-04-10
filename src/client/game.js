@@ -1,4 +1,4 @@
-var socket = io();
+var socket = io({transports: ['websocket'], upgrade: false});
 
 var lastdir, currdir;
 
@@ -8,7 +8,7 @@ var changeDirection = {
 }
 
 var delta, lastFrameTimeMs, velocity;
-velocity = .25;
+velocity = .15;
 
 var players = {};
 
@@ -18,8 +18,12 @@ var player = {
 }
 
 socket.on('state', function(newplayers) {
-	player = newplayers[socket.id];
+	//player = newplayers[socket.id];
 	players = newplayers;
+})
+
+socket.on('disconnect', function(id) {
+	delete players[id];
 })
 
 socket.emit('new player');
@@ -28,6 +32,11 @@ var canvas = document.getElementById('canvas');
 
 canvas.width = 400;
 canvas.height = 400;
+
+var lineStart = {
+	x: player.x,
+	y: player.y
+}
 
 document.addEventListener('keydown', function(event) {
 	lastdir = currdir;
@@ -62,8 +71,19 @@ document.addEventListener('keydown', function(event) {
 		changeDirection.time = Date.now();
 		changeDirection.direction = currdir;
 		socket.emit('direction', changeDirection);
+		drawLine(player.x, player.y);
 	}
 })
+
+function drawLine(x, y) {
+	var context = canvas.getContext('2d');
+	context.beginPath();
+	context.moveTo(lineStart.x + 10, lineStart.y);
+	context.lineTo(x + 10, y);
+	context.stroke();
+	lineStart.x = x;
+	lineStart.y = y;
+}
 
 function update(delta) {
 	if(currdir == "l") {
@@ -83,23 +103,24 @@ function update(delta) {
 function draw() {
 
 	var context = canvas.getContext('2d');
-	context.beginPath();
+
 	context.fillStyle = 'green';
-	context.rect(0,0,400,400);
+	context.rect(player.x - 3, player.y - 3, 26, 26);
 	context.fill();
 
-	for (var id in players) {
+	/*for (var id in players) {
 
 		context.beginPath();
 		context.fillStyle = 'red';
 		context.rect(players[id].x, players[id].y, 20,20);
 		context.fill();
-	}
+	}*/
 
 	context.beginPath();
 	context.fillStyle = 'red';
 	context.rect(player.x, player.y, 20,20);
 	context.fill();
+
 }
 
 function gameLoop(timestamp) {
@@ -108,11 +129,16 @@ function gameLoop(timestamp) {
     lastFrameTimeMs = timestamp;
 
     update(delta);
-
+    
     draw();
 
 	window.requestAnimationFrame(gameLoop);
 }
+
+var context = canvas.getContext('2d');
+
+context.fillStyle = 'green';
+context.fillRect(0,0,400,400);
 
 gameLoop();
 

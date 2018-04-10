@@ -8,7 +8,7 @@ var server = http.Server(app);
 var io = socketIO(server);
 
 var delta, velocity, lastFrame;
-velocity = .25;
+velocity = .15;
 
 app.set('port', 4321);
 app.use('/client', express.static(__dirname + '/client'));
@@ -30,6 +30,7 @@ io.on('connection', function(socket) {
 			y: 100,
 			direction: ""
 		}
+		io.sockets.emit('connect', players);
 		console.log('new player connected');
 		console.log(players);
 	});
@@ -39,6 +40,7 @@ io.on('connection', function(socket) {
 	})
 	socket.on('disconnect', function () {
 	    io.emit('user disconnected');
+	    io.sockets.emit('disconnect', socket.id);
 	    delete players[socket.id];
 	});
 });
@@ -72,4 +74,4 @@ function gameLoop() {
 setInterval(function() {
 	gameLoop();
 	io.sockets.emit('state', players);
-}, 1000/60);
+}, 1000/30);
