@@ -1,5 +1,15 @@
 var socket = io({transports: ['websocket'], upgrade: false});
 
+var config = {
+    apiKey: "AIzaSyAiDkGOGaAkRTTYameiQFJUNMjdOS6ONNc",
+    authDomain: "cs252-lab6-2018.firebaseapp.com",
+    databaseURL: "https://cs252-lab6-2018.firebaseio.com",
+    projectId: "cs252-lab6-2018",
+    storageBucket: "cs252-lab6-2018.appspot.com",
+    messagingSenderId: "8737404167"
+  };
+firebase.initializeApp(config);
+
 var lastdir, currdir;
 
 var changeDirection = {
@@ -16,6 +26,9 @@ var player = {
 	x: 60,
 	y: 20
 }
+
+var img = new Image();
+img.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
 
 socket.on('state', function(newplayers) {
 	//player = newplayers[socket.id];
@@ -104,10 +117,16 @@ function draw() {
 
 	var context = canvas.getContext('2d');
 
-	context.fillStyle = 'green';
-	context.rect(player.x - 3, player.y - 3, 26, 26);
-	context.fill();
+	context.setTransform(1,0,0,1,-(player.x-400/2),-(player.y-400/2));
+	var grd=context.createLinearGradient(0,0,400,0);
+	grd.addColorStop(0,"blue");
+	grd.addColorStop(1,"white");
 
+	var pat=context.createPattern(img,"repeat");
+
+	context.fillStyle = pat;
+	context.fillRect(0,0,1000, 1000);
+	context.fill();
 	/*for (var id in players) {
 
 		context.beginPath();
@@ -120,6 +139,7 @@ function draw() {
 	context.fillStyle = 'red';
 	context.rect(player.x, player.y, 20,20);
 	context.fill();
+	context.translate(player.x - 200, player.y - 200);
 
 }
 
