@@ -26,6 +26,10 @@ var player = {
 	x: 60,
 	y: 20
 }
+var camera = {
+	x: player.x,
+	y: player.y
+}
 
 var img = new Image();
 img.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
@@ -41,10 +45,11 @@ socket.on('disconnect', function(id) {
 
 socket.emit('new player');
 
-var canvas = document.getElementById('canvas');
+var pcanvas = document.getElementById('pcanvas');
+var context = pcanvas.getContext('2d'); 
 
-canvas.width = 400;
-canvas.height = 400;
+pcanvas.width = 400;
+pcanvas.height = 400;
 
 var lineStart = {
 	x: player.x,
@@ -89,7 +94,6 @@ document.addEventListener('keydown', function(event) {
 })
 
 function drawLine(x, y) {
-	var context = canvas.getContext('2d');
 	context.beginPath();
 	context.moveTo(lineStart.x + 10, lineStart.y);
 	context.lineTo(x + 10, y);
@@ -115,12 +119,13 @@ function update(delta) {
 
 function draw() {
 
-	var context = canvas.getContext('2d');
+	camera.x = clamp((player.x-400/2), 0, 600);
+	camera.y = clamp((player.y-400/2), 0, 600);
 
-	context.setTransform(1,0,0,1,-(player.x-400/2),-(player.y-400/2));
-	var grd=context.createLinearGradient(0,0,400,0);
-	grd.addColorStop(0,"blue");
-	grd.addColorStop(1,"white");
+	console.log("x: " + player.x);
+	console.log("y: " + player.y);
+
+	context.setTransform(1,0,0,1,-camera.x, -camera.y);
 
 	var pat=context.createPattern(img,"repeat");
 
@@ -135,11 +140,9 @@ function draw() {
 		context.fill();
 	}*/
 
-	context.beginPath();
 	context.fillStyle = 'red';
-	context.rect(player.x, player.y, 20,20);
-	context.fill();
-	context.translate(player.x - 200, player.y - 200);
+	context.fillRect(player.x, player.y, 20,20);
+	//context.translate(player.x - 200, player.y - 200);
 
 }
 
@@ -155,7 +158,6 @@ function gameLoop(timestamp) {
 	window.requestAnimationFrame(gameLoop);
 }
 
-var context = canvas.getContext('2d');
 
 context.fillStyle = 'green';
 context.fillRect(0,0,400,400);
@@ -163,3 +165,13 @@ context.fillRect(0,0,400,400);
 gameLoop();
 
 
+function clamp(value, min, max) { 
+  if (value < min) { 
+    return min; 
+  } 
+  if (value > max) { 
+    return max; 
+  } 
+  return value; 
+} 
+ 
