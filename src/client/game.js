@@ -21,6 +21,7 @@ var delta, lastFrameTimeMs, velocity;
 velocity = .15;
 
 var players = {};
+var scale = 1;
 
 var player = {
 	x: 60,
@@ -31,8 +32,10 @@ var camera = {
 	y: player.y
 }
 
+var trails = [];
+
 var img = new Image();
-img.src = 'https://mdn.mozillademos.org/files/222/Canvas_createpattern.png';
+img.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
 
 socket.on('state', function(newplayers) {
 	//player = newplayers[socket.id];
@@ -45,15 +48,15 @@ socket.on('disconnect', function(id) {
 
 socket.emit('new player');
 
-var pcanvas = document.getElementById('pcanvas');
-var context = pcanvas.getContext('2d'); 
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d'); 
 
-pcanvas.width = 400;
-pcanvas.height = 400;
+canvas.width = 600;
+canvas.height = 600;
 
 var lineStart = {
-	x: player.x,
-	y: player.y
+	x: player.x + 10,
+	y: player.y + 10
 }
 
 document.addEventListener('keydown', function(event) {
@@ -89,20 +92,26 @@ document.addEventListener('keydown', function(event) {
 		changeDirection.time = Date.now();
 		changeDirection.direction = currdir;
 		socket.emit('direction', changeDirection);
-		drawLine(player.x, player.y);
+		drawLine(player.x + 10, player.y + 10);
 	}
 })
 
 function drawLine(x, y) {
-	context.beginPath();
-	context.moveTo(lineStart.x + 10, lineStart.y);
-	context.lineTo(x + 10, y);
-	context.stroke();
+
+	var line = {
+		x1: lineStart.x, 
+		y1: lineStart.y, 
+		x2: x,
+		y2: y
+	}
+	trails.push(line);
+
 	lineStart.x = x;
 	lineStart.y = y;
 }
 
 function update(delta) {
+
 	if(currdir == "l") {
 		player.x -= velocity * delta;
 	}
@@ -115,34 +124,49 @@ function update(delta) {
 	else if(currdir == "d") {
 		player.y += velocity * delta;
 	}
+
+	for(var i = 0; i < trails.length - 2; i++) {
+		var trail = trails[i];
+		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				velocity = 0;
+				console.log("COLLISION");
+			}
+		}
+	}
 }
 
 function draw() {
 
-	camera.x = clamp((player.x-400/2), 0, 600);
-	camera.y = clamp((player.y-400/2), 0, 600);
 
-	console.log("x: " + player.x);
-	console.log("y: " + player.y);
+	camera.x = clamp((player.x-canvas.width/(2*scale)), 0, 1000 - (canvas.width / scale));
+	camera.y = clamp((player.y-canvas.height/(2*scale)), 0, 1000 - (canvas.height / scale));
 
-	context.setTransform(1,0,0,1,-camera.x, -camera.y);
-
+	context.setTransform(1,0,0,1,-camera.x * scale, -camera.y * scale);
+	
+	context.scale(scale, scale);
 	var pat=context.createPattern(img,"repeat");
 
 	context.fillStyle = pat;
-	context.fillRect(0,0,1000, 1000);
+	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
 	context.fill();
-	/*for (var id in players) {
 
-		context.beginPath();
-		context.fillStyle = 'red';
-		context.rect(players[id].x, players[id].y, 20,20);
-		context.fill();
-	}*/
+	context.beginPath();
+	for(var i = 0; i < trails.length; i++) {
+		var trail = trails[i];
+		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+			context.moveTo(trail.x1, trail.y1);
+			context.lineTo(trail.x2, trail.y2);
+		}
+	}
+	context.moveTo(lineStart.x, lineStart.y);
+	context.lineTo(player.x + 10, player.y + 10);
+	context.stroke();
 
 	context.fillStyle = 'red';
 	context.fillRect(player.x, player.y, 20,20);
-	//context.translate(player.x - 200, player.y - 200);
+
+	context.translate(camera.x, camera.y);
 
 }
 
@@ -158,10 +182,6 @@ function gameLoop(timestamp) {
 	window.requestAnimationFrame(gameLoop);
 }
 
-
-context.fillStyle = 'green';
-context.fillRect(0,0,400,400);
-
 gameLoop();
 
 
@@ -174,4 +194,43 @@ function clamp(value, min, max) {
   } 
   return value; 
 } 
- 
+
+
+function inView(x, y) {
+	if( x > camera.x && 
+		x < camera.x + canvas.width &&
+		y > camera.y &&
+		y < camera.y + canvas.height
+	) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+/*
+ *Uses algorithm of line intersection of Wikipedia
+ *https://en.wikipedia.org/wiki/Line–line_intersection
+ */
+function isColliding(x1, y1, x2, y2) {
+	var x3 = player.x;
+	var x4 = player.x + 20;
+	var y3 = player.y;
+	var y4 = player.y + 20;
+
+	var u = ( ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) );
+
+	var t = ( ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) );
+
+	if(u >= 0 && u <= 1 && t >= 0 && t <= 1) {
+		return true;
+	}
+	else  {
+		return false;
+	}
+}
+
+
+
+
