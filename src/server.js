@@ -77,4 +77,4 @@ function gameLoop() {
 setInterval(function() {
 	gameLoop();
 	io.sockets.emit('state', players);
-}, 1000/30);
+}, 1000/60);
