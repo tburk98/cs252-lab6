@@ -1,0 +1,97 @@
+/* SCSS Document */
+.logoContainer {
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 40px; }
+
+.menu {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%; }
+
+body {
+  background-color: #2c3e50;
+  font-family: 'Montserrat', sans-serif; }
+
+a {
+  color: white;
+  text-decoration: none; }
+
+h1 {
+  font-family: 'Montserrat', sans-serif;
+  color: white;
+  font-size: 20pt; }
+
+.code-input {
+  width: 100px;
+  margin: 15px;
+  height: 50px;
+  background-color: #202d3a;
+  outline-color: transparent;
+  outline: none;
+  border: 2px solid #2c3e50;
+  border-radius: 25px;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  text-align: center;
+  font-size: 14pt; }
+
+.logo {
+  object-fit: contain;
+  width: 30%;
+  height: 20%; }
+
+.buttonText {
+  text-align: center; }
+
+.button {
+  width: 30%;
+  margin: 15px;
+  height: 50px;
+  background-color: #202d3a;
+  outline-color: transparent;
+  outline: none;
+  border: 2px solid #2c3e50;
+  border-radius: 25px;
+  color: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15pt;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1); }
+
+.button:focus {
+  outline: none;
+  outline-color: transparent; }
+
+.button::after {
+  outline: none;
+  outline-color: transparent;
+  width: 100%;
+  height: 100%;
+  border-radius: 25px;
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  box-shadow: 0 5px 10px 2px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  -webkit-transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1); }
+
+.button:hover {
+  outline: none;
+  outline-color: rgba(0, 0, 0, 0.1);
+  -webkit-transform: scale(1.25, 1.25);
+  transform: scale(1.2, 1.2); }
+
+.button:hover::after {
+  outline: none;
+  outline-color: rgba(0, 0, 0, 0.1);
+  opacity: 1; }
