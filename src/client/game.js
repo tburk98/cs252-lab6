@@ -14,16 +14,28 @@ var lastdir, currdir;
 
 var changeDirection = {
 	direction: "",
-	time: Date.now()
+	time: Date.now(),
+	trail: {
+		x1: 0,
+		x2: 0,
+		y1: 0,
+		y2: 0
+	}
 }
 
 var delta, lastFrameTimeMs, velocity;
 velocity = .15;
 
-var players = {};
+var players = {
+	id: {
+		x: 0,
+		y: 0,
+	}
+};
 var scale = 1;
 
 var player = {
+	id: 0,
 	x: 60,
 	y: 20
 }
@@ -38,12 +50,47 @@ var img = new Image();
 img.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
 
 socket.on('state', function(newplayers) {
-	//player = newplayers[socket.id];
-	players = newplayers;
+	for(var id in newplayers) {
+		if(id != player.id) {
+			players[id] = newplayers[id];
+		}
+	}
 })
 
 socket.on('disconnect', function(id) {
 	delete players[id];
+})
+
+socket.on('new player', function(data) {
+	console.log(data);
+	for(var id in data.players) {
+		console.log(data.players[id].x);
+		if(id != player.id) {
+			players[id].x = data.players[id].x;
+			players[id].y = data.players[id].y;
+		}
+		else {
+			player.x = data.players[id].x;
+			player.y = data.players[id].y;
+			lineStart.x = player.x;
+			lineStart.y = player.y;
+		}
+	}
+
+	trails.concat(data.trails);
+})
+
+socket.on('collision', function(id) {
+	console.log(id + "is dead");
+})
+
+socket.on('id', function(id) {
+	player.id = id;
+	console.log(id);
+})
+
+socket.on('trail', function(trail) {
+	trails.push(trail);
 })
 
 socket.emit('new player');
@@ -55,8 +102,6 @@ canvas.width = 600;
 canvas.height = 600;
 
 var lineStart = {
-	x: player.x + 10,
-	y: player.y + 10
 }
 
 document.addEventListener('keydown', function(event) {
@@ -91,6 +136,12 @@ document.addEventListener('keydown', function(event) {
 		 event.keyCode == 83 )) {
 		changeDirection.time = Date.now();
 		changeDirection.direction = currdir;
+		changeDirection.trail = {
+			x1: lineStart.x, 
+			y1: lineStart.y, 
+			x2: player.x + 10,
+			y2: player.y + 10
+		}
 		socket.emit('direction', changeDirection);
 		drawLine(player.x + 10, player.y + 10);
 	}
@@ -127,12 +178,11 @@ function update(delta) {
 
 	for(var i = 0; i < trails.length - 2; i++) {
 		var trail = trails[i];
-		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
 				velocity = 0;
-				console.log("COLLISION");
 			}
-		}
+		//}
 	}
 }
 
@@ -154,17 +204,27 @@ function draw() {
 	context.beginPath();
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
-		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+		//if(inView(trail.x1, trail.y1, trail.x2, trail.y2)) {
 			context.moveTo(trail.x1, trail.y1);
 			context.lineTo(trail.x2, trail.y2);
-		}
+		//}
 	}
+
 	context.moveTo(lineStart.x, lineStart.y);
 	context.lineTo(player.x + 10, player.y + 10);
 	context.stroke();
 
 	context.fillStyle = 'red';
 	context.fillRect(player.x, player.y, 20,20);
+
+	for(var id in players) {
+		context.fillStyle = 'red';
+		context.fillRect(players[id].x, players[id].y, 20,20);
+		/*context.beginPath();
+		context.moveTo(lineStart.x, lineStart.y);
+		context.lineTo(player.x + 10, player.y + 10);
+		context.stroke();*/
+	}
 
 	context.translate(camera.x, camera.y);
 
@@ -196,12 +256,27 @@ function clamp(value, min, max) {
 } 
 
 
-function inView(x, y) {
-	if( x > camera.x && 
-		x < camera.x + canvas.width &&
-		y > camera.y &&
-		y < camera.y + canvas.height
-	) {
+function inView(x1, y1, x2, y2) {
+	if( (x1 > camera.x && 
+		x1 < camera.x + canvas.width &&
+		y1 > camera.y &&
+		y1 < camera.y + canvas.height
+	) || (x2 > camera.x && 
+		x2 < camera.x + canvas.width &&
+		y2 > camera.y &&
+		y2 < camera.y + canvas.height
+	)) {
+		return true;
+	}
+	else if((x1 < camera.x && 
+		x2 > camera.x + canvas.width &&
+		y1 > camera.y &&
+		y1 < camera.y + canvas.height
+	) || (x1 > camera.x && 
+		x1 < camera.x + canvas.width &&
+		y1 < camera.y &&
+		y2 > camera.y + canvas.height
+	)) {
 		return true;
 	}
 	else {
