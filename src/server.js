@@ -11,18 +11,21 @@ require('dotenv').config();
 const PORT = process.env.PORT || 4321;
 
 var delta, velocity, lastFrame;
+var room = "";
 velocity = .15;
 
 app.set('port', PORT);
 app.use('/', express.static(__dirname + '/client/'));
-app.use('/game', express.static(__dirname + '/client/game'));
+app.use('/join', express.static(__dirname + '/client/join'));
 
 app.get('/', function(request, response) {
 	response.sendFile(path.join(__dirname, '/client/index.html'));
 });
 
-app.get('/game', function(request, response) {
-	response.sendFile(path.join(__dirname, '/game/index.html'));
+app.get('/game/:id', function(request, response) {
+	response.sendFile(path.join(__dirname, '/client/game/index.html'));
+	room = request.url.split("/")[2];
+
 });
 
 server.listen(PORT, function() {
@@ -35,6 +38,7 @@ var trails = [];
 var lines = {};
 
 io.on('connection', function(socket) {
+	socket.join(room);
 	socket.emit('socketID', socket.id);
 
 	socket.on('new player', function() {
@@ -55,7 +59,7 @@ io.on('connection', function(socket) {
 			x: players[socket.id].x + 10,
 			y: players[socket.id].y + 10,
 		}
-		io.sockets.emit('newconnect', sentplayers);
+		io.sockets.in(room).emit('newconnect', sentplayers);
 		console.log('new player connected');
 		console.log(players);
 	});
@@ -76,12 +80,12 @@ io.on('connection', function(socket) {
 		line.id = socket.id;
 		lines[socket.id].x = players[socket.id].x + 10;
 		lines[socket.id].y = players[socket.id].y + 10;
-		socket.broadcast.emit('trail', line);
+		socket.broadcast.to(room).emit('trail', line);
 	});
 
 	socket.on('disconnect', function () {
-	    io.emit('user disconnected');
-	    io.sockets.emit('disconnect', socket.id);
+	    io.in(room).emit('user disconnected');
+	    io.sockets.in(room).emit('disconnect', socket.id);
 	    delete players[socket.id];
 	    delete sentplayers[socket.id];
 	});
@@ -127,5 +131,5 @@ function gameLoop() {
 
 setInterval(function() {
 	gameLoop();
-	io.sockets.emit('state', sentplayers);
+	io.sockets.in(room).emit('state', sentplayers);
 }, 1000/20);

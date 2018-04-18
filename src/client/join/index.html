@@ -15,10 +15,17 @@
 		</div>
 		<div class="menu">
 			<h1>Enter game code</h1>
-			<input class="code-input" type="text" placeholder="1234" maxlength="4" />
-			<button class="button"><a href="../game">Join</a></button>
+			<input id="code-input" type="text" placeholder="1234" maxlength="4" />
+			<button onclick="joinGame()" id="join-button"><a id="join" href="#">Join</a></button>
 		</div>
 		
 	</div>
 </body>
+
+<script>
+	function joinGame() {
+	    var join = document.getElementById("code-input").value;
+	    document.getElementById("join").href = "../game/" + join;
+	}
+</script>
 </html>
