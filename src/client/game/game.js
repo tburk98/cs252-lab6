@@ -40,6 +40,7 @@ var camera = {
 
 var trails = [];
 var othertrails = [];
+var trailColors = ["white", "blue", "red", "purple", "yellow", "green"];
 var currtrails = {};
 var inputDisabled = true;
 var timeleft = 4;
@@ -61,19 +62,16 @@ socket.on('state', function(newplayers) {
 			if(id != player.id) {
 				targets[id].x = newplayers[id].x;
 				targets[id].y = newplayers[id].y;
+				players[id].i = newplayers[id].i;
 			}
 		}
 	}
 })
 
 socket.on('trail', function(trail) {
-	var line = {
-		x1: trail.x1,
-		y1: trail.y1,
-		x2: trail.x2,
-		y2: trail.y2
-	}
-	othertrails.push(trail);
+
+	othertrails.push(trail)
+
 	if(trail.id != player.id) {
 		lineStarts[trail.id].x = trail.x2;
 		lineStarts[trail.id].y = trail.y2;
@@ -133,6 +131,8 @@ socket.on('start', function() {
 
 socket.on('gameover', function() {
 	gameOver = "Game Over!";
+	player.velocity = 0;
+	inputDisabled = true;
 })
 
 socket.emit('new player');
@@ -209,20 +209,17 @@ function update(delta) {
 		if(targets[id].x != 0 && targets[id].y != 0) {
 			if(targets[id].x > players[id].x+1) {
 				players[id].x += velocity * delta;
-				players[id].i = 1;
 			}
 			else if(targets[id].x < players[id].x-1) {
 				players[id].x -= velocity * delta;
-				players[id].i = 3;
 			}
 
 			if(targets[id].y > players[id].y+1) {
 				players[id].y += velocity * delta;
-				players[id].i = 2;
 			}
 			else if(targets[id].y < players[id].y-1) {
 				players[id].y -= velocity * delta;
-				players[id].i =  0;
+
 			}
 		}
 	}
@@ -257,18 +254,15 @@ function update(delta) {
 			//}
 		}
 
+		
 		for(var i = 0; i < othertrails.length; i++) {
 			var trail = othertrails[i];
-			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-					player.velocity = 0;
-					console.log('COLLISION');
-					socket.emit('collision');
-
-				}
-			//}
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				player.velocity = 0;
+				console.log('COLLISION');
+				socket.emit('collision');
+			}
 		}
-
 		//console.log(currtrails);
 		for(var i in currtrails) {
 			var trail = currtrails[i];
@@ -295,10 +289,12 @@ function draw() {
 	context.scale(scale, scale);
 	var pat=context.createPattern(bg,"repeat");
 
-	context.fillStyle = pat;
+	context.fillStyle = "#202d3a";
 	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
 	
+
 	context.beginPath();
+	context.strokeStyle = trailColors[player.h]
 	context.lineWidth = 3;
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
@@ -311,20 +307,21 @@ function draw() {
 	context.lineTo(player.x + 15, player.y + 15);
 	context.stroke();
 
-	context.beginPath();
-	for(var i = 0; i < othertrails.length; i++) {
-		var trail = othertrails[i];
-		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-			context.moveTo(trail.x1, trail.y1);
-			context.lineTo(trail.x2, trail.y2);
-		//}
-	}
-	context.stroke();
-
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
 	
 
 	for(var id in players) {
+
+
+		for(var i = 0; i < othertrails.length; i++) {
+			var trail = othertrails[i];
+				context.beginPath();
+				context.strokeStyle = trailColors[players[trail.id].h]
+				context.moveTo(trail.x1, trail.y1);
+				context.lineTo(trail.x2, trail.y2);
+				context.stroke();
+		}
+
 		context.beginPath();
 		context.moveTo(lineStarts[id].x, lineStarts[id].y);
 		context.lineTo(players[id].x + 15, players[id].y + 15);
@@ -405,10 +402,10 @@ function sendMessage() {
  *https://en.wikipedia.org/wiki/Line–line_intersection
  */
 function isColliding(x1, y1, x2, y2) {
-	var x3 = player.x - 5;
-	var x4 = player.x + 25;
-	var y3 = player.y - 5;
-	var y4 = player.y + 25;
+	var x3 = player.x + 3;
+	var x4 = player.x + 18;
+	var y3 = player.y + 3;
+	var y4 = player.y + 18;
 
 	var u = ( ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) );
 
