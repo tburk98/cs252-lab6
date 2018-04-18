@@ -6,6 +6,23 @@
 	<title>Nort - Join</title>
 	<link href="css/style.css" rel="stylesheet">
 	<link href="https://fonts.googleapis.com/css?family=Montserrat:700" rel="stylesheet">
+	
+	<script type="text/javascript">
+		
+		function validateForm() {
+			var code = document.getElementById("gamecode").value;
+			var nick = document.getElementById("nickname").value;
+
+			if (code==null || code=="" || nick==null || nick=="") {
+				alert("Gamecode and nickname required");
+				return false;
+			}
+
+			//go to game or whatever
+		}
+		
+	</script>
+	
 </head>
 <body>
 	<div id="main">
@@ -14,9 +31,10 @@
   			<img class="logo" src="NORT.png" alt="NORT"/>
 		</div>
 		<div class="menu">
-			<h1>Enter game code</h1>
-			<input class="code-input" type="text" placeholder="1234" maxlength="4" />
-			<button class="button"><a href="#">Join</a></button>
+			<h1>Enter game code & a nickname</h1>
+			<input id="gamecode" class="code-input" type="text" placeholder="1234" maxlength="4" />
+			<input id="nickname" class="nickname-input" type="text" placeholder="nickname" maxlength="16" />
+			<button class="button" onClick="submit()"><a href="#">Join</a></button>
 		</div>
 		
 	</div>
