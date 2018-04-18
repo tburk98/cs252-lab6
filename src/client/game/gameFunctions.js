@@ -76,5 +76,3 @@ function isDead (gameID, socketID) {
         console.log("error getting wins")
     })
 }
-
-createGame(120, 23)
