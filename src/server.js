@@ -133,3 +133,6 @@ setInterval(function() {
 	gameLoop();
 	io.sockets.in(room).emit('state', sentplayers);
 }, 1000/20);
+
+
+
