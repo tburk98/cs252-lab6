@@ -57,12 +57,13 @@ io.on('connection', function(socket) {
 		sentplayers[socket.id] = {
 			x: offset * (Object.keys(players).length + 1),
 			y: 100,
-			h: Math.floor(Math.random() * 6) 
+			h: Math.floor(Math.random() * 6), 
+			i: 2
 		}
 
 		lines[socket.id] = {
-			x: players[socket.id].x + 10,
-			y: players[socket.id].y + 10,
+			x: players[socket.id].x + 15,
+			y: players[socket.id].y + 15,
 		}
 		io.sockets.in(room).emit('newconnect', sentplayers);
 		console.log('new player connected');
@@ -131,18 +132,22 @@ function update(delta) {
 		if(player.direction == "l") {
 			player.x -= player.velocity * delta;
 			sentplayer.x -= player.velocity * delta;
+			sentplayer.i = 3;
 		}
 		else if(player.direction == "r") {
 			player.x += player.velocity * delta;
 			sentplayer.x += player.velocity * delta;
+			sentplayer.i = 1; 
 		}
 		else if(player.direction == "u") {
 			player.y -= player.velocity * delta;
 			sentplayer.y -= player.velocity * delta;
+			sentplayer.i = 0;
 		}
 		else if(player.direction == "d") {
 			player.y += player.velocity * delta;
 			sentplayer.y += player.velocity * delta;
+			sentplayer.i = 2;
 		}
 
 	}
@@ -160,7 +165,7 @@ function gameLoop() {
 setInterval(function() {
 	gameLoop();
 	io.sockets.in(room).emit('state', sentplayers);
-}, 1000/20);
+}, 1000/15);
 
 
 
