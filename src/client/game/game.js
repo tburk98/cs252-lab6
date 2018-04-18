@@ -30,7 +30,8 @@ var player = {
 	x: 0,
 	y: 0,
 	velocity: .15,
-	i: 2
+	i: 2,
+	h: 0
 }
 var camera = {
 	x: player.x,
@@ -40,12 +41,18 @@ var camera = {
 var trails = [];
 var othertrails = [];
 var currtrails = {};
-var drawTrail = false;
+var inputDisabled = true;
+var timeleft = 4;
+var gameOver = "";
 
-var img = new Image();
-img.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
+var img = [];
+var bg = new Image();
+bg.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
 var snail = new Image();
-snail.src = '../assets/default-snail.png';
+for(var i = 1; i < 7; i++) {
+	img[i-1] = new Image();
+	img[i-1].src = "../assets/default-snail" + i + ".png";
+}
 
 socket.on('state', function(newplayers) {
 	
@@ -95,8 +102,9 @@ socket.on('newconnect', function(newplayers) {
 			if(player.x == 0 && player.y == 0) {
 				player.x = newplayers[id].x;
 				player.y = newplayers[id].y;
-				lineStart.x = player.x + 10;
-				lineStart.y = player.y + 10;
+				player.h = newplayers[id].h;
+				lineStart.x = player.x + 15;
+				lineStart.y = player.y + 15;
 				drawTrail = true;
 			}
 		}
@@ -109,6 +117,24 @@ socket.on('disconnect', function(id) {
 	delete players[id];
 })
 
+socket.on('ready', function() {
+	timeleft--;
+	var downloadTimer = setInterval(function(){
+	  timeleft--;
+	  if(timeleft <= -1) {
+	    clearInterval(downloadTimer);
+	  }
+	},1000);
+})
+
+socket.on('start', function() {
+	inputDisabled = false;
+})
+
+socket.on('gameover', function() {
+	gameOver = "Game Over!";
+})
+
 socket.emit('new player');
 
 var canvas = document.getElementById('canvas');
@@ -118,44 +144,47 @@ canvas.width = 600;
 canvas.height = 600;
 
 var lineStart = {
-	x: player.x + 10,
-	y: player.y + 10
+	x: player.x + 15,
+	y: player.y + 15
 }
 
 document.addEventListener('keydown', function(event) {
-	lastdir = currdir;
-	switch(event.keyCode) {
-		case 65: // A
-	      if(currdir != "r") {
- 		    currdir = "l";
-	      }
-	      break;
-	    case 87: // W
-	      if(currdir != "d") {
- 		    currdir = "u";
-	      }
-	      break;
-	    case 68: // D
-	      if(currdir != "l") {
- 		    currdir = "r";
-	      }
-	      break;
-	    case 83: // S
-	      if(currdir != "u") {
- 		    currdir = "d";
-	      }
-	      break;
-	}
+	
+	if(!inputDisabled) {
+		lastdir = currdir;
+		switch(event.keyCode) {
+			case 65: // A
+		      if(currdir != "r") {
+	 		    currdir = "l";
+		      }
+		      break;
+		    case 87: // W
+		      if(currdir != "d") {
+	 		    currdir = "u";
+		      }
+		      break;
+		    case 68: // D
+		      if(currdir != "l") {
+	 		    currdir = "r";
+		      }
+		      break;
+		    case 83: // S
+		      if(currdir != "u") {
+	 		    currdir = "d";
+		      }
+		      break;
+		}
 
-	if(lastdir != currdir && 
-		(event.keyCode == 65 ||
-		 event.keyCode == 87 ||
-		 event.keyCode == 68 ||
-		 event.keyCode == 83 )) {
-		changeDirection.time = Date.now();
-		changeDirection.direction = currdir;
-		socket.emit('direction', changeDirection);
-		drawLine(player.x + 16, player.y + 16);
+		if(lastdir != currdir && 
+			(event.keyCode == 65 ||
+			 event.keyCode == 87 ||
+			 event.keyCode == 68 ||
+			 event.keyCode == 83 )) {
+			changeDirection.time = Date.now();
+			changeDirection.direction = currdir;
+			socket.emit('direction', changeDirection);
+			drawLine(player.x + 15, player.y + 15);
+		}
 	}
 })
 
@@ -264,14 +293,13 @@ function draw() {
 	context.setTransform(1,0,0,1,-camera.x * scale, -camera.y * scale);
 	
 	context.scale(scale, scale);
-	var pat=context.createPattern(img,"repeat");
+	var pat=context.createPattern(bg,"repeat");
 
 	context.fillStyle = pat;
 	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
-	context.fill();
 	
 	context.beginPath();
-	context.lineWidth = 15;
+	context.lineWidth = 3;
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
 		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
@@ -280,7 +308,7 @@ function draw() {
 		//}
 	}
 	context.moveTo(lineStart.x, lineStart.y);
-	context.lineTo(player.x + 16, player.y + 16);
+	context.lineTo(player.x + 15, player.y + 15);
 	context.stroke();
 
 	context.beginPath();
@@ -293,27 +321,28 @@ function draw() {
 	}
 	context.stroke();
 
-	//context.fillStyle = 'red';
-	//context.fillRect(player.x, player.y, 30,30);
-
-	context.drawImage(snail,player.i * 32,0,32,32,player.x,player.y,32,32);
+	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
+	
 
 	for(var id in players) {
 		context.beginPath();
 		context.moveTo(lineStarts[id].x, lineStarts[id].y);
-		context.lineTo(players[id].x + 10, players[id].y + 10);
+		context.lineTo(players[id].x + 15, players[id].y + 15);
 		currtrails[id] = {
 			x1:lineStarts[id].x,
 			y1:lineStarts[id].y,
-			x2:players[id].x + 16,
-			y2:players[id].y + 16
+			x2:players[id].x + 15,
+			y2:players[id].y + 15
 		}
 		context.stroke();
-		context.drawImage(snail,players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
+		context.drawImage(img[players[id].h],players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
 	}
 
 
 	context.translate(camera.x, camera.y);
+
+	sendMessage();
+
 
 }
 
@@ -356,6 +385,21 @@ function inView(x, y) {
 	}
 }
 
+function sendMessage() {
+	context.fillStyle = "black";
+	if(timeleft == 4) {
+		context.fillText("Waiting for other players...", canvas.width/2, canvas.height/2);
+	}
+	else if(timeleft > 0) {
+		context.fillText(timeleft, canvas.width/2, canvas.height/2);
+	}
+	else if(timeleft == 0) {
+		context.fillText("Go!", canvas.width/2, canvas.height/2);
+	}
+	else if(gameOver != "") {
+		context.fillText(gameOver, canvas.width/2, canvas.height/2);
+	}
+}
 /*
  *Uses algorithm of line intersection of Wikipedia
  *https://en.wikipedia.org/wiki/Line–line_intersection
