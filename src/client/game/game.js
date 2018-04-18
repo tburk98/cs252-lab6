@@ -317,7 +317,6 @@ function draw() {
 			var trail = othertrails[i];
 				context.beginPath();
 				context.strokeStyle = trailColors[players[trail.id].h]
-				console.log(trailColors[players[trail.id].h]);
 				context.moveTo(trail.x1, trail.y1);
 				context.lineTo(trail.x2, trail.y2);
 				context.stroke();
