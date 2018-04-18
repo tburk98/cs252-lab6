@@ -35,7 +35,10 @@ server.listen(PORT, function() {
 var players = {};
 var sentplayers = {};
 var trails = [];
+var maxplayers = 2;
+var deadplayers = 0;
 var lines = {};
+var offset = 150;
 
 io.on('connection', function(socket) {
 	socket.join(room);
@@ -43,16 +46,18 @@ io.on('connection', function(socket) {
 
 	socket.on('new player', function() {
 
+
 		players[socket.id] = {
-			x: 40 * (Object.keys(players).length + 1),
+			x: offset * (Object.keys(players).length + 1),
 			y: 100,
 			velocity: .15,
 			direction: ""
 		}
 
 		sentplayers[socket.id] = {
-			x: 40 * (Object.keys(players).length + 1),
+			x: offset * (Object.keys(players).length + 1),
 			y: 100,
+			h: Math.floor(Math.random() * 6) 
 		}
 
 		lines[socket.id] = {
@@ -62,25 +67,39 @@ io.on('connection', function(socket) {
 		io.sockets.in(room).emit('newconnect', sentplayers);
 		console.log('new player connected');
 		console.log(players);
+
+		if(Object.keys(players).length == maxplayers) {
+			io.sockets.in(room).emit('ready');
+			var timeleft = 3;
+			var downloadTimer = setInterval(function(){
+			  timeleft--;
+			  if(timeleft <= 0) {
+			  	io.sockets.in(room).emit('start');
+			    clearInterval(downloadTimer);
+			  }
+			},1000);
+		}
 	});
 
 	socket.on('direction', function(data) {
 		var player = players[socket.id] || {};
 		player.direction = data.direction;
-		var line = {
-			x1: lines[socket.id].x,
-			y1: lines[socket.id].y,
-			x2: player.x + 10,
-			y2: player.y + 10,
-		}
-		trails.push(line);
-		line.x1 += 40;
-		line.x2 += 40;
+		if(lines[socket.id] != "undefined") {
+			var line = {
+				x1: lines[socket.id].x,
+				y1: lines[socket.id].y,
+				x2: player.x + 15,
+				y2: player.y + 15,
+			}
+			trails.push(line);
+			line.x1 += offset;
+			line.x2 += offset;
 
-		line.id = socket.id;
-		lines[socket.id].x = players[socket.id].x + 10;
-		lines[socket.id].y = players[socket.id].y + 10;
-		socket.broadcast.to(room).emit('trail', line);
+			line.id = socket.id;
+			lines[socket.id].x = players[socket.id].x + 15;
+			lines[socket.id].y = players[socket.id].y + 15;
+			socket.broadcast.to(room).emit('trail', line);
+		}
 	});
 
 	socket.on('disconnect', function () {
@@ -92,7 +111,16 @@ io.on('connection', function(socket) {
 
 	socket.on('collision', function() {
 		players[socket.id].velocity = 0;
-		console.log('COLLISION');
+		deadplayers++;
+		if(deadplayers + 1 == maxplayers) {
+			io.sockets.in(room).emit('gameover');
+			for(var id in players) {
+				delete players[id];
+	    		delete sentplayers[id];
+	    		delete lines[id];
+	    		trails = [];
+			}
+		}
 	});
 });
 
