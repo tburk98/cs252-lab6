@@ -21,11 +21,14 @@ var delta, lastFrameTimeMs, velocity;
 velocity = .15;
 
 var players = {};
+var targets = {};
+var lineStarts = {};
 var scale = 1;
 
 var player = {
-	x: 60,
-	y: 20
+	id: 0,
+	x: 0,
+	y: 0
 }
 var camera = {
 	x: player.x,
@@ -33,13 +36,68 @@ var camera = {
 }
 
 var trails = [];
+var othertrails = [];
+var drawTrail = false;
 
 var img = new Image();
 img.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
 
 socket.on('state', function(newplayers) {
-	//player = newplayers[socket.id];
-	players = newplayers;
+	
+	if(newplayers != "undefined") {
+		for(var id in newplayers) {
+			if(id != player.id) {
+				targets[id].x = newplayers[id].x;
+				targets[id].y = newplayers[id].y;
+				console.log("TARGET" + targets[id].x);
+				console.log("PLAYER" + players[id].x);
+			}
+		}
+	}
+})
+
+socket.on('trail', function(trail) {
+	var line = {
+		x1: trail.x1,
+		y1: trail.y1,
+		x2: trail.x2,
+		y2: trail.y2
+	}
+	othertrails.push(trail);
+	if(trail.id != player.id) {
+		lineStarts[trail.id].x = trail.x2;
+		lineStarts[trail.id].y = trail.y2;
+	}
+})
+
+socket.on('socketID', function(id) {
+	console.log(id);
+	player.id = id;
+})
+
+socket.on('newconnect', function(newplayers) {
+	console.log(newplayers);
+	for(var id in newplayers) {
+		if(id != player.id) {
+			players[id] = newplayers[id];
+			targets[id] = newplayers[id];
+			lineStarts[id] = {
+				x: players[id].x,
+				y: players[id].y
+			}
+		}
+		else {
+			if(player.x == 0 && player.y == 0) {
+				player.x = newplayers[id].x;
+				player.y = newplayers[id].y;
+				lineStart.x = player.x + 10;
+				lineStart.y = player.y + 10;
+				drawTrail = true;
+			}
+		}
+	}
+
+	console.log(players);
 })
 
 socket.on('disconnect', function(id) {
@@ -112,6 +170,22 @@ function drawLine(x, y) {
 
 function update(delta) {
 
+	/*for(var id in players) {
+		if(targets[id].x > players[id].x) {
+			players[id].x -= velocity * delta;
+		}
+		else if(targets[id].x > players[id].x) {
+			players[id].x += velocity * delta;
+		}
+
+		if(targets[id].y > players[id].y) {
+			players[id].y -= velocity * delta;
+		}
+		else if(targets[id].y > players[id].y) {
+			players[id].y += velocity * delta;
+		}
+	}*/
+
 	if(currdir == "l") {
 		player.x -= velocity * delta;
 	}
@@ -125,13 +199,29 @@ function update(delta) {
 		player.y += velocity * delta;
 	}
 
-	for(var i = 0; i < trails.length - 2; i++) {
-		var trail = trails[i];
-		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-				velocity = 0;
-				console.log("COLLISION");
-			}
+	if(velocity > 0) {
+		for(var i = 0; i < trails.length - 2; i++) {
+			var trail = trails[i];
+			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+					velocity = 0;
+					//console.log("COLLISION");
+					console.log('COLLISION');
+					socket.emit('collision');
+				}
+			//}
+		}
+
+		for(var i = 0; i < othertrails.length; i++) {
+		var trail = othertrails[i];
+			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+					velocity = 0;
+					console.log('COLLISION');
+					socket.emit('collision');
+
+				}
+			//}
 		}
 	}
 }
@@ -150,21 +240,40 @@ function draw() {
 	context.fillStyle = pat;
 	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
 	context.fill();
-
+	
 	context.beginPath();
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
-		if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
 			context.moveTo(trail.x1, trail.y1);
 			context.lineTo(trail.x2, trail.y2);
-		}
+		//}
 	}
 	context.moveTo(lineStart.x, lineStart.y);
 	context.lineTo(player.x + 10, player.y + 10);
 	context.stroke();
 
+	context.beginPath();
+	for(var i = 0; i < othertrails.length; i++) {
+		var trail = othertrails[i];
+		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
+			context.moveTo(trail.x1, trail.y1);
+			context.lineTo(trail.x2, trail.y2);
+		//}
+	}
+	context.stroke();
+
 	context.fillStyle = 'red';
 	context.fillRect(player.x, player.y, 20,20);
+
+	for(var id in players) {
+		context.fillStyle = 'red';
+		context.fillRect(players[id].x, players[id].y, 20,20);
+		context.beginPath();
+		context.moveTo(lineStarts[id].x, lineStarts[id].y);
+		context.lineTo(players[id].x + 10, players[id].y + 10);
+		context.stroke();
+	}
 
 	context.translate(camera.x, camera.y);
 
