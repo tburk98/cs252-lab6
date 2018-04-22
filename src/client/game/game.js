@@ -1,4 +1,5 @@
 var socket = io({transports: ['websocket'], upgrade: false});
+login();
 
 var lastdir, currdir;
 
@@ -74,14 +75,14 @@ socket.on('socketID', async function(game) {
 	player.id = game.id;
 	gameID = game.gameID;
 	
-	await joinGame(gameID, player.id).catch((err) => {
+	await joinGame(gameID).catch((err) => {
         console.log("JOIN GAME ERROR: " + err);
         alert(err);
         window.location.href = "../join";
     });
     
 	console.log("joined game");
-    socket.emit('new player');
+    socket.emit('new player', getID());
 })
 
 socket.on('newconnect', function(newplayers) {
@@ -243,14 +244,11 @@ function update(delta) {
 	if(player.velocity > 0) {
 		for(var i = 0; i < trails.length - 2; i++) {
 			var trail = trails[i];
-			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-					player.velocity = 0;
-					//console.log("COLLISION");
-					console.log('COLLISION');
-					socket.emit('collision');
-				}
-			//}
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				player.velocity = 0;
+				console.log('COLLISION');
+				socket.emit('collision');
+			}
 		}
 
 		
@@ -262,17 +260,15 @@ function update(delta) {
 				socket.emit('collision');
 			}
 		}
-		//console.log(currtrails);
+
 		for(var i in currtrails) {
 			var trail = currtrails[i];
-			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-					player.velocity = 0;
-					console.log('COLLISION');
-					socket.emit('collision');
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				player.velocity = 0;
+				console.log('COLLISION');
+				socket.emit('collision');
 
-				}
-			//}
+			}
 		}
 	}
 }
@@ -297,10 +293,8 @@ function draw() {
 	context.lineWidth = 3;
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
-		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-			context.moveTo(trail.x1, trail.y1);
-			context.lineTo(trail.x2, trail.y2);
-		//}
+		context.moveTo(trail.x1, trail.y1);
+		context.lineTo(trail.x2, trail.y2);
 	}
 	context.moveTo(lineStart.x, lineStart.y);
 	context.lineTo(player.x + 15, player.y + 15);

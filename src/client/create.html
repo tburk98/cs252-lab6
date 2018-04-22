@@ -27,6 +27,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
 <script src="game/gameFunctions.js" type="text/javascript"></script>
 <script>
+	login();
 	async function startGame() {
 		var create = document.getElementById("create").value;
 		await createGame(create).catch((err) => {
