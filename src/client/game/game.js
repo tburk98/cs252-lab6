@@ -39,7 +39,7 @@ var gameOver = "";
 
 var img = [];
 var bg = new Image();
-bg.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
+bg.src = "../assets/NORT Background.jpg";
 var snail = new Image();
 for(var i = 1; i < 7; i++) {
 	img[i-1] = new Image();
@@ -286,11 +286,12 @@ function draw() {
 	context.setTransform(1,0,0,1,-camera.x * scale, -camera.y * scale);
 	
 	context.scale(scale, scale);
-	var pat=context.createPattern(bg,"repeat");
-
-	context.fillStyle = "#202d3a";
-	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
+	//var pat=context.createPattern(bg,"repeat");
 	
+	//context.fillStyle = "#202d3a";
+	
+	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
+	context.drawImage(bg, 20, 20);
 
 	context.beginPath();
 	context.strokeStyle = trailColors[player.h]
@@ -338,7 +339,7 @@ function draw() {
 	context.translate(camera.x, camera.y);
 
 	sendMessage();
-
+	
 
 }
 
@@ -382,7 +383,7 @@ function inView(x, y) {
 }
 
 function sendMessage() {
-	context.fillStyle = "black";
+	context.fillStyle = "white";
 	if(timeleft == 4) {
 		context.fillText("Waiting for other players...", canvas.width/2, canvas.height/2);
 	}
