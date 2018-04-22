@@ -1,6 +1,12 @@
 .canvas {
-	position: absolute;
-	top: 0;
-	left: 0;
-	background-image: url("../assets/NORT Background.jpg");
+	padding: 0;
+    margin: auto;
+    display: block;
+    width: 600px;
+    height: 600px;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }

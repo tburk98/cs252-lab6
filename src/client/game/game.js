@@ -291,7 +291,7 @@ function draw() {
 	//context.fillStyle = "#202d3a";
 	
 	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
-	context.drawImage(bg, 20, 20);
+	context.drawImage(bg, 0, 0);
 
 	context.beginPath();
 	context.strokeStyle = trailColors[player.h]
