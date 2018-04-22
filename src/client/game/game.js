@@ -1,15 +1,5 @@
 var socket = io({transports: ['websocket'], upgrade: false});
 
-var config = {
-    apiKey: "AIzaSyAiDkGOGaAkRTTYameiQFJUNMjdOS6ONNc",
-    authDomain: "cs252-lab6-2018.firebaseapp.com",
-    databaseURL: "https://cs252-lab6-2018.firebaseio.com",
-    projectId: "cs252-lab6-2018",
-    storageBucket: "cs252-lab6-2018.appspot.com",
-    messagingSenderId: "8737404167"
-  };
-firebase.initializeApp(config);
-
 var lastdir, currdir;
 
 var changeDirection = {
@@ -17,7 +7,7 @@ var changeDirection = {
 	time: Date.now()
 }
 
-var delta, lastFrameTimeMs, velocity;
+var delta, lastFrameTimeMs, velocity, gameID;
 velocity = .15;
 
 var players = {};
@@ -43,6 +33,7 @@ var othertrails = [];
 var trailColors = ["white", "blue", "red", "purple", "yellow", "green"];
 var currtrails = {};
 var inputDisabled = true;
+var gameDisabled = false;
 var timeleft = 4;
 var gameOver = "";
 
@@ -78,9 +69,19 @@ socket.on('trail', function(trail) {
 	}
 })
 
-socket.on('socketID', function(id) {
-	console.log(id);
-	player.id = id;
+socket.on('socketID', async function(game) {
+	console.log(game);
+	player.id = game.id;
+	gameID = game.gameID;
+	
+	await joinGame(gameID, player.id).catch((err) => {
+        console.log("JOIN GAME ERROR: " + err);
+        alert(err);
+        window.location.href = "../join";
+    });
+    
+	console.log("joined game");
+    socket.emit('new player');
 })
 
 socket.on('newconnect', function(newplayers) {
@@ -134,8 +135,6 @@ socket.on('gameover', function() {
 	player.velocity = 0;
 	inputDisabled = true;
 })
-
-socket.emit('new player');
 
 var canvas = document.getElementById('canvas');
 var context = canvas.getContext('2d'); 
