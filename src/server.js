@@ -89,10 +89,11 @@ io.on('connection', function(socket) {
 	}
 	socket.emit('socketID', game);
 
-	socket.on('new player', async function() {
+	socket.on('new player', async function(data) {
 
 
 		games[room].players[socket.id] = {
+			id: data,
 			x: offset * (Object.keys(games[room].players).length + 1),
 			y: 100,
 			velocity: .15,
@@ -153,10 +154,12 @@ io.on('connection', function(socket) {
 	    io.in(room).emit('user disconnected');
 	    io.sockets.in(room).emit('disconnect', socket.id);
 	    if(games[room] != null) {
+	    	if(games[room].players[socket.id] != undefined) {
+	    		removePlayer(room, games[room].players[socket.id].id);
+	    	}
 	    	delete games[room].players[socket.id];
 	    	delete games[room].sentplayers[socket.id];
 		}
-		removePlayer(room, socket.id);
 	});
 
 	socket.on('collision', function() {

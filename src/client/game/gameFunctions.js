@@ -12,9 +12,13 @@ const preGame = document.getElementById('games')
 
 const dbRef = firebase.database().ref().child('games')
 
+var uid;
+
 //dbRef.on('value', data => console.log(data.val()))
 
-
+function getID() {
+    return uid;
+}
 function createGame (gameID) {
     console.log("Creating game..");
     firebase.database().ref('games/' + gameID).once('value', function(data) {
@@ -39,7 +43,7 @@ function createGame (gameID) {
 
 }
 
-async function joinGame (gameID, socketID) {
+async function joinGame (gameID) {
 
     await firebase.database().ref('games/' + gameID).once('value').then(function(data) { 
         if(data.val() == null) {
@@ -49,7 +53,7 @@ async function joinGame (gameID, socketID) {
             throw "Game is not open." ;
         }
         else if(data.val().players == null) {
-            firebase.database().ref('games/' + gameID + '/players/' + socketID).set({
+            firebase.database().ref('games/' + gameID + '/players/' + getID()).set({
                 isDead: false,
                 wins: 0,
             });
@@ -60,7 +64,7 @@ async function joinGame (gameID, socketID) {
             throw "Game is full";
         }
         else {
-            firebase.database().ref('games/' + gameID + '/players/' + socketID).set({
+            firebase.database().ref('games/' + gameID + '/players/' + getID()).set({
                 isDead: false,
                 wins: 0,
             });
@@ -73,6 +77,38 @@ async function joinGame (gameID, socketID) {
 function closeGame (gameID) {
     firebase.database().ref('games/' + gameID).update({
         isOpen: false,
+    });
+}
+
+function login() {
+    firebase.auth().signInAnonymously().catch(function(error) {
+      // Handle Errors here.
+      var errorCode = error.code;
+      var errorMessage = error.message;
+      // ...
+    });
+
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+        // User is signed in.
+        var isAnonymous = user.isAnonymous;
+        uid = user.uid;
+        // ...
+        console.log(getID());
+        firebase.database().ref('users').once('value').then(function(data) { 
+            console.log(data);
+            if(!(getID() in data.val())) {
+                firebase.database().ref('users/' + getID()).set({
+                    username: "player",
+                    wins: 0,
+                });
+            }
+        })
+      } else {
+        // User is signed out.
+        // ...
+      }
+      // ...
     });
 }
 
