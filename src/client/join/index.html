@@ -14,8 +14,9 @@
   			<img class="logo" src="../NORT.png" alt="NORT"/>
 		</div>
 		<div class="menu">
-			<h1>Enter game code</h1>
+			<h1>Enter game code & a nickname</h1>
 			<input class="code-input" id="code-input" type="text" placeholder="1234" maxlength="4" />
+			<input id="nickname" class="nickname-input" type="text" placeholder="nickname" maxlength="16" />
 			<button onclick="joinGame()" class="button" id="join-button"><a id="join" href="#">Join</a></button>
 		</div>
 		
@@ -24,7 +25,14 @@
 
 <script>
 	function joinGame() {
-	    var join = document.getElementById("code-input").value;
+		var join = document.getElementById("code-input").value;
+		var nick = document.getElementById("nickname").value;
+
+		if (join==null || join=="" || nick==null || nick=="") {
+			alert("Gamecode and nickname required");
+			return false;
+		}
+	    
 	    document.getElementById("join").href = "../game/" + join;
 	}
 </script>
