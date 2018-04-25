@@ -45,6 +45,8 @@
 		})
 	};
 	
+	getName();
+
 	async function startGame() {
 		var code = document.getElementById("code").value;
 		var numOfPlayers = document.getElementById("num").value;
@@ -53,6 +55,7 @@
 		await createGame(code, numOfPlayers).catch((err) => {
 			alert(err);
 		});
+		//await setUsername(document.getElementById("nickname").value).then(d => {
 	}
 </script>
 </html>

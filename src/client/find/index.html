@@ -31,8 +31,18 @@
 	<script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
 	<script src="../game/gameFunctions.js" type="text/javascript"></script>
 	<script>
-		login();
 		var data;
+
+		async function getName() {
+			await login();
+
+			await getUsername().then((name) => {
+				console.log(name);
+				document.getElementById("nickname").value = name;
+			})
+		}
+
+		getName();
 
 		firebase.database().ref('/games/').orderByChild('isOpen').equalTo(true).on("value", function(snapshot) {
 			data = [];
@@ -57,8 +67,9 @@
 
 		
 		async function join(ID) {
+
 			await setUsername(document.getElementById("nickname").value).then(d => {
-				window.location.href = "game/" + ID;
+				window.location.href = "../game/" + ID;
 			});
 		}
 
