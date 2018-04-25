@@ -144,3 +144,20 @@ h3 {
     transform: rotate(0deg); }
   100% {
     transform: rotate(360deg); } }
+.table {
+  margin-top: 10px;
+  border: 1px solid white;
+  border-color: white;
+  width: 40vw; }
+
+table, td, th {
+  border-collapse: collapse;
+  border: 1px solid white;
+  text-align: center; }
+
+tr {
+  height: 40px;
+  font-family: 'Montserrat', sans-serif;
+  color: white;
+  font-size: 12pt;
+  font-weight: 400; }
