@@ -39,6 +39,24 @@ function getMaxPlayers(gameID) {
 	})
 }
 
+async function addWin(socketID) {
+	var count = 0;
+	await firebase.database().ref('users/' + socketID).once('value', function(data) {
+		if(data.val() == null) {
+			return;
+		}
+		else {
+			count = data.val().wins;
+			console.log(count + 1);
+			firebase.database().ref('users/' + socketID).update({
+		        wins: count + 1,
+		    });
+		}
+	})
+
+
+}
+
 function openGame (gameID) {
 
     firebase.database().ref('games/' + gameID).update({
@@ -187,12 +205,13 @@ io.on('connection', async function(socket) {
 					games[room].deadplayers++;
 				}
 				else {
-					winner = games[room].sentplayers[id].u;
+					winner = id;
 				}
 			}
 
 			if(games[room].deadplayers + 1 >= games[room].maxplayers) {
-				io.sockets.in(room).emit('gameover', winner);
+				io.sockets.in(room).emit('gameover', games[room].sentplayers[winner].u);
+				addWin(games[room].players[winner].id);
 				openGame(room);
 				for(var id in games[room].players) {
 					if(games[room] != null) {

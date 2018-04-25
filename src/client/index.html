@@ -18,8 +18,37 @@
 			<button class="button"><a href="join">Join a game</a></button>
 			<button class="button"><a href="create">Create a game</a></button>
 			<button class="button"><a href="find">Find a game</a></button>
+
+			<br>
+			<div>Leaderboards</div>
+			<div id="TBL" style="margin-top: 20px; margin-bottom: 20px"></div>
 		</div>
 		
 	</div>
 </body>
+<script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
+<script src="../game/gameFunctions.js" type="text/javascript"></script>
+<script>
+	var data;
+	firebase.database().ref('/users/').orderByChild('wins').startAt(1).on("value", function(snapshot) {
+		data = [];
+        console.log(snapshot.val());
+        snapshot.forEach(function(d) {
+        	console.log(d.val());
+            data.push(d.val().username + " : " + d.val().wins);
+        });
+        console.log(data);
+
+        var table = '';
+		var rows = data.length;
+		for(var r = 0; r < rows; r++) {
+			table += '<tr>';
+				table += '<td>' + data[rows - r - 1] + '</td>';
+			table += '</tr>';
+		}
+	
+		var div = document.getElementById('TBL');
+		div.innerHTML = '<table class="table"><tr><th>Game ID : Wins</th></tr>' + table + '</table>';
+    });
+</script>
 </html>

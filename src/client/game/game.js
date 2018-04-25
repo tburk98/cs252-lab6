@@ -398,7 +398,7 @@ function draw() {
 		context.stroke();
 		context.drawImage(img[players[id].h],players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
 		context.fillStyle = "white";
-		context.fillText(players[id].u, players[id].x + 15 - context.measureText(players[id].u), players[id].y + 40);
+		context.fillText(players[id].u, players[id].x + 15 - context.measureText(players[id].u).width / 2, players[id].y + 40);
 	}
 
 
