@@ -349,9 +349,17 @@ function draw() {
 		context.moveTo(trail.x1, trail.y1);
 		context.lineTo(trail.x2, trail.y2);
 	}
-	context.moveTo(lineStart.x, lineStart.y);
-	context.lineTo(player.x + 15, player.y + 15);
-	context.stroke();
+	if(currdir == "r" || currdir == "l") {
+		context.moveTo(lineStart.x, lineStart.y);
+		context.lineTo(player.x + 15, lineStart.y);
+		context.stroke();	
+	}
+	else if(currdir == "d" || currdir == "u") {
+		context.moveTo(lineStart.x, lineStart.y);
+		context.lineTo(lineStart.x, player.y + 15);
+		context.stroke();	
+	}
+	
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
 	context.fillStyle = "white";
