@@ -67,7 +67,11 @@
 
 		
 		async function join(ID) {
-
+			var nickname = document.getElementByID("nickname").value;
+			if(nickname == null || nickname == "") {
+				alert("Nickname required");
+				return false;
+			}
 			await setUsername(document.getElementById("nickname").value).then(d => {
 				window.location.href = "../game/" + ID;
 			});
