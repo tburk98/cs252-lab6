@@ -23,8 +23,7 @@ var player = {
 	velocity: 0,
 	i: 2,
 	h: 0,
-	xoff: 0,
-	yoff: 0
+	u: "",
 }
 var camera = {
 	x: player.x,
@@ -44,7 +43,7 @@ var gameOver = "";
 
 var img = [];
 var bg = new Image();
-bg.src = "../assets/NORT Background.jpg";
+bg.src = "../assets/NORTbackground.jpg";
 var snail = new Image();
 for(var i = 1; i < 7; i++) {
 	img[i-1] = new Image();
@@ -128,6 +127,7 @@ socket.on('newconnect', function(newplayers) {
 				player.x = newplayers[id].x;
 				player.y = newplayers[id].y;
 				player.h = newplayers[id].h;
+				player.u = newplayers[id].u;
 				lineStart.x = player.x + 15;
 				lineStart.y = player.y + 15;
 				drawTrail = true;
@@ -350,7 +350,7 @@ function draw() {
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
 	context.fillStyle = "white";
-	context.fillText("justin", player.x + 15, player.y + 40);
+	context.fillText(player.u, player.x + 15, player.y + 40);
 	
 
 	for(var id in players) {

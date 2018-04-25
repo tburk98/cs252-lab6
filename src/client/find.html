@@ -28,23 +28,41 @@
 	</div>
 	
 </body>
-	
-	<script type="text/javascript">
-		var table = '';
-		var rows = 10;
-		for(var r = 0; r < rows; r++) {
-			table += '<tr>';
-				table += '<td>' + r + '</td>';
-				table += '<td>' + '<button type="button" class="joinBttn" id='+r+' onClick="join(this.id)">Join</button></td>';
-			table += '</tr>';
-		}
-	
-		var div = document.getElementById('TBL');
-		div.innerHTML += '<table class="table"><tr><th>Game ID</th><th>Join button</th></tr>' + table + '</table>';
+	<script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
+	<script src="game/gameFunctions.js" type="text/javascript"></script>
+	<script>
+		login();
+		var data;
+
+		firebase.database().ref('/games/').orderByChild('isOpen').equalTo(true).on("value", function(snapshot) {
+			data = [];
+	        console.log(snapshot.val());
+	        snapshot.forEach(function(d) {
+	            data.push(d.key);
+	        });
+	        console.log(data);
+
+	        var table = '';
+			var rows = data.length;
+			for(var r = 0; r < rows; r++) {
+				table += '<tr>';
+					table += '<td>' + data[r] + '</td>';
+					table += '<td>' + '<button type="button" class="joinBttn" id='+data[r]+' onClick="join(this.id)">Join</button></td>';
+				table += '</tr>';
+			}
 		
-		function join(ID) {
-			alert(ID);
+			var div = document.getElementById('TBL');
+			div.innerHTML = '<table class="table"><tr><th>Game ID</th><th>Join button</th></tr>' + table + '</table>';
+	    });
+
+		
+		async function join(ID) {
+			await setUsername(document.getElementById("nickname").value).then(d => {
+				window.location.href = "game/" + ID;
+			});
 		}
+
+
 	</script>
 	
 </html>

@@ -35,6 +35,15 @@ async function getUsername() {
 
     return name;
 }
+
+async function setUsername(name) {
+    await firebase.database().ref('users/' + getID()).update({
+        username: name,
+    });
+
+    return getID();
+}
+
 function createGame (gameID, numOfPlayers) {
     console.log("Creating game..");
     firebase.database().ref('games/' + gameID).once('value', function(data) {
