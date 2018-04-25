@@ -26,7 +26,7 @@
 			</div>
 			<div style="display: flex; flex-direction: row; align-items: center;">
 				<div>Gamecode: </div>
-				<input class="code-input" id="code" type="text" placeholder="1234"/>
+				<input class="code-input" id="code" type="text" placeholder="1234" maxlength="4"/>
 			</div>
 			<button class="button" onclick="return startGame();"><a id="start">Start</a></button>
 		</div>
@@ -41,7 +41,7 @@
 		var code = document.getElementById("code").value;
 		var numOfPlayers = document.getElementById("num").value;
 		var nickname = document.getElementById("nickname").value;
-		await createGame(code).catch((err) => {
+		await createGame(code, numOfPlayers).catch((err) => {
 			alert(err);
 		});
 	}

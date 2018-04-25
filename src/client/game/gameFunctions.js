@@ -19,13 +19,29 @@ var uid;
 function getID() {
     return uid;
 }
-function createGame (gameID) {
+
+async function getUsername() {
+
+    var name;
+    await firebase.database().ref('users/' + uid).once('value', function(data) {
+        if(data.val() != null && data.val().username != null) {
+            console.log(data.val().username);
+            name = data.val().username;
+        }
+        else {
+            return "player";
+        }
+    })
+
+    return name;
+}
+function createGame (gameID, numOfPlayers) {
     console.log("Creating game..");
     firebase.database().ref('games/' + gameID).once('value', function(data) {
         if (data.val() === null) {
             firebase.database().ref('games/' + gameID).set({
                 isOpen: true,
-                maxPlayers: 2,
+                maxPlayers: numOfPlayers,
             });
     
             /*firebase.database().ref('games/' + gameID + '/players/' + socketID).set({

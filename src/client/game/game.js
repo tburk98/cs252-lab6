@@ -20,14 +20,18 @@ var player = {
 	id: 0,
 	x: 0,
 	y: 0,
-	velocity: .15,
+	velocity: 0,
 	i: 2,
-	h: 0
+	h: 0,
+	xoff: 0,
+	yoff: 0
 }
 var camera = {
 	x: player.x,
 	y: player.y
 }
+
+var target = {x:0,y:0};
 
 var trails = [];
 var othertrails = [];
@@ -56,17 +60,26 @@ socket.on('state', function(newplayers) {
 				targets[id].y = newplayers[id].y;
 				players[id].i = newplayers[id].i;
 			}
+			else {
+				target.x = newplayers[id].x;
+				target.y = newplayers[id].y;
+			}
 		}
 	}
 })
 
 socket.on('trail', function(trail) {
 
-	othertrails.push(trail)
 
 	if(trail.id != player.id) {
 		lineStarts[trail.id].x = trail.x2;
 		lineStarts[trail.id].y = trail.y2;
+		othertrails.push(trail);
+	}
+	else {
+		trails.push(trail);
+		lineStart.x = trail.x2;
+		lineStart.y = trail.y2;
 	}
 })
 
@@ -82,7 +95,19 @@ socket.on('socketID', async function(game) {
     });
     
 	console.log("joined game");
-    socket.emit('new player', getID());
+
+	var data = {
+		id: getID(),
+		username: "player"
+	}
+
+	await getUsername().then((name) => {
+		console.log(name);
+		data.username = name;
+		console.log("username " + data.username);
+
+    	socket.emit('new player', data);
+	});
 })
 
 socket.on('newconnect', function(newplayers) {
@@ -129,10 +154,11 @@ socket.on('ready', function() {
 
 socket.on('start', function() {
 	inputDisabled = false;
+	player.velocity = .15;
 })
 
-socket.on('gameover', function() {
-	gameOver = "Game Over!";
+socket.on('gameover', function(winner) {
+	gameOver = "Game Over!\n" + winner + " wins!";
 	player.velocity = 0;
 	inputDisabled = true;
 })
@@ -156,21 +182,25 @@ document.addEventListener('keydown', function(event) {
 			case 65: // A
 		      if(currdir != "r") {
 	 		    currdir = "l";
+	 		    player.i = 3;
 		      }
 		      break;
 		    case 87: // W
 		      if(currdir != "d") {
 	 		    currdir = "u";
+	 		    player.i = 0;
 		      }
 		      break;
 		    case 68: // D
 		      if(currdir != "l") {
 	 		    currdir = "r";
+	 		    player.i = 1;
 		      }
 		      break;
 		    case 83: // S
 		      if(currdir != "u") {
 	 		    currdir = "d";
+	 		    player.i = 2;
 		      }
 		      break;
 		}
@@ -183,7 +213,7 @@ document.addEventListener('keydown', function(event) {
 			changeDirection.time = Date.now();
 			changeDirection.direction = currdir;
 			socket.emit('direction', changeDirection);
-			drawLine(player.x + 15, player.y + 15);
+			//drawLine(player.x + 15, player.y + 15);
 		}
 	}
 })
@@ -224,6 +254,23 @@ function update(delta) {
 		}
 	}
 
+	if(target.x != 0 && target.y != 0) {
+		if(target.x > player.x+10) {
+			player.x += velocity * delta;
+		}
+		else if(target.x < player.x-10) {
+			player.x -= velocity * delta;
+		}
+
+		if(target.y > player.y+10) {
+			player.y += velocity * delta;
+		}
+		else if(target.y < player.y-10) {
+			player.y -= velocity * delta;
+
+		}
+	}
+
 	if(currdir == "l") {
 		player.x -= player.velocity * delta;
 		player.i = 3;
@@ -247,7 +294,7 @@ function update(delta) {
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
 				player.velocity = 0;
 				console.log('COLLISION');
-				socket.emit('collision');
+				socket.emit('collision', player.id);
 			}
 		}
 
@@ -257,7 +304,7 @@ function update(delta) {
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
 				player.velocity = 0;
 				console.log('COLLISION');
-				socket.emit('collision');
+				socket.emit('collision', player.id);
 			}
 		}
 
@@ -266,7 +313,7 @@ function update(delta) {
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
 				player.velocity = 0;
 				console.log('COLLISION');
-				socket.emit('collision');
+				socket.emit('collision', player.id);
 
 			}
 		}
@@ -298,10 +345,12 @@ function draw() {
 		context.lineTo(trail.x2, trail.y2);
 	}
 	context.moveTo(lineStart.x, lineStart.y);
-	context.lineTo(player.x + 15, player.y + 15);
+	context.lineTo(player.x + 15 + player.xoff, player.y + 15 + player.yoff);
 	context.stroke();
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
+	context.fillStyle = "white";
+	context.fillText("justin", player.x + 15, player.y + 40);
 	
 
 	for(var id in players) {
@@ -327,6 +376,8 @@ function draw() {
 		}
 		context.stroke();
 		context.drawImage(img[players[id].h],players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
+		context.fillStyle = "white";
+		context.fillText(players[id].u, players[id].x + 15, players[id].y + 40);
 	}
 
 
