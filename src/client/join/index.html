@@ -17,14 +17,27 @@
 			<h1>Enter game code & a nickname</h1>
 			<input class="code-input" id="code-input" type="text" placeholder="1234" maxlength="4" />
 			<input id="nickname" class="nickname-input" type="text" placeholder="nickname" maxlength="16" />
-			<button onclick="joinGame()" class="button" id="join-button"><a id="join" href="#">Join</a></button>
+			<button onclick="return joinGame()" class="button" id="join-button"><a id="join">Join</a></button>
 		</div>
 		
 	</div>
 </body>
 
+<script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
+<script src="../game/gameFunctions.js" type="text/javascript"></script>
 <script>
-	function joinGame() {
+	async function getName() {
+		await login();
+
+		await getUsername().then((name) => {
+			console.log(name);
+			document.getElementById("nickname").value = name;
+		})
+	}
+
+	getName();
+	async function joinGame() {
+
 		var join = document.getElementById("code-input").value;
 		var nick = document.getElementById("nickname").value;
 
@@ -32,8 +45,9 @@
 			alert("Gamecode and nickname required");
 			return false;
 		}
-	    
-	    document.getElementById("join").href = "../game/" + join;
+	    await setUsername(nick).then((d) => {
+	    	window.location.href = "../game/" + join;
+	    })
 	}
 </script>
 </html>

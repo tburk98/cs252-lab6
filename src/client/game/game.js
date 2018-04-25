@@ -39,7 +39,7 @@ var target = {x:0,y:0};
 
 var trails = [];
 var othertrails = [];
-var trailColors = ["white", "blue", "red", "purple", "yellow", "green"];
+var trailColors = ["white", "cyan", "red", "violet", "yellow", "lime"];
 var currtrails = {};
 var inputDisabled = true;
 var gameDisabled = false;
@@ -294,6 +294,13 @@ function update(delta) {
 	}
 
 	if(player.velocity > 0) {
+
+		if(player.x < -20 || player.x > 980 || player.y < -20 || player.y > 980) {
+			player.velocity = 0;
+			console.log('COLLISION');
+			socket.emit('collision', player.id);
+		}
+
 		for(var i = 0; i < trails.length - 2; i++) {
 			var trail = trails[i];
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
@@ -349,28 +356,37 @@ function draw() {
 		context.moveTo(trail.x1, trail.y1);
 		context.lineTo(trail.x2, trail.y2);
 	}
-	context.moveTo(lineStart.x, lineStart.y);
-	context.lineTo(player.x + 15, player.y + 15);
-	context.stroke();
+	if(currdir == "r" || currdir == "l") {
+		context.moveTo(lineStart.x, lineStart.y);
+		context.lineTo(player.x + 15, lineStart.y);
+		context.stroke();	
+	}
+	else if(currdir == "d" || currdir == "u") {
+		context.moveTo(lineStart.x, lineStart.y);
+		context.lineTo(lineStart.x, player.y + 15);
+		context.stroke();	
+	}
+	
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
 	context.fillStyle = "white";
-	context.fillText(player.u, player.x + 15, player.y + 40);
+	context.fillText(player.u, player.x - context.measureText(player.u).width / 2 + 15, player.y + 40);
 	
+
+
+	for(var i = 0; i < othertrails.length; i++) {
+		var trail = othertrails[i];
+		context.beginPath();
+		context.strokeStyle = trailColors[players[trail.id].h]
+		context.moveTo(trail.x1, trail.y1);
+		context.lineTo(trail.x2, trail.y2);
+		context.stroke();
+	}
 
 	for(var id in players) {
 
-
-		for(var i = 0; i < othertrails.length; i++) {
-			var trail = othertrails[i];
-				context.beginPath();
-				context.strokeStyle = trailColors[players[trail.id].h]
-				context.moveTo(trail.x1, trail.y1);
-				context.lineTo(trail.x2, trail.y2);
-				context.stroke();
-		}
-
 		context.beginPath();
+		context.strokeStyle = trailColors[players[id].h]
 		context.moveTo(lineStarts[id].x, lineStarts[id].y);
 		context.lineTo(players[id].x + 15, players[id].y + 15);
 		currtrails[id] = {
@@ -382,7 +398,7 @@ function draw() {
 		context.stroke();
 		context.drawImage(img[players[id].h],players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
 		context.fillStyle = "white";
-		context.fillText(players[id].u, players[id].x + 15, players[id].y + 40);
+		context.fillText(players[id].u, players[id].x + 15 - context.measureText(players[id].u), players[id].y + 40);
 	}
 
 
@@ -434,8 +450,10 @@ function inView(x, y) {
 
 function sendMessage() {
 	context.fillStyle = "white";
+	context.font="20px Avenir";
+	var wait = "Waiting for other players..."
 	if(timeleft == 4) {
-		context.fillText("Waiting for other players...", canvas.width/2, canvas.height/2);
+		context.fillText(wait, canvas.width/2 - context.measureText(wait).width / 2, canvas.height/2);
 	}
 	else if(timeleft > 0) {
 		context.fillText(timeleft, canvas.width/2, canvas.height/2);
@@ -444,7 +462,7 @@ function sendMessage() {
 		context.fillText("Go!", canvas.width/2, canvas.height/2);
 	}
 	else if(gameOver != "") {
-		context.fillText(gameOver, canvas.width/2, canvas.height/2);
+		context.fillText(gameOver, canvas.width/2 - context.measureText(gameOver).width / 2 , canvas.height/4);
 	}
 }
 /*

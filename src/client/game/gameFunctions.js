@@ -14,8 +14,6 @@ const dbRef = firebase.database().ref().child('games')
 
 var uid;
 
-//dbRef.on('value', data => console.log(data.val()))
-
 function getID() {
     return uid;
 }
@@ -23,13 +21,13 @@ function getID() {
 async function getUsername() {
 
     var name;
-    await firebase.database().ref('users/' + uid).once('value', function(data) {
+    await firebase.database().ref('users/' + getID()).once('value', function(data) {
         if(data.val() != null && data.val().username != null) {
-            console.log(data.val().username);
+            console.log(data.val());
             name = data.val().username;
         }
         else {
-            return "player";
+            return "";
         }
     })
 
@@ -58,7 +56,7 @@ function createGame (gameID, numOfPlayers) {
                 wins: 0,
             })*/
             console.log("Game created!");
-            window.location.href = "game/" + gameID;
+            window.location.href = "../game/" + gameID;
             return false;
         }
         else {
@@ -105,15 +103,15 @@ function closeGame (gameID) {
     });
 }
 
-function login() {
-    firebase.auth().signInAnonymously().catch(function(error) {
+async function login() {
+    await firebase.auth().signInAnonymously().catch(function(error) {
       // Handle Errors here.
       var errorCode = error.code;
       var errorMessage = error.message;
       // ...
     });
 
-    firebase.auth().onAuthStateChanged(function(user) {
+    await firebase.auth().onAuthStateChanged(function(user) {
       if (user) {
         // User is signed in.
         var isAnonymous = user.isAnonymous;
