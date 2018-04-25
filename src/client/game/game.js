@@ -30,6 +30,11 @@ var camera = {
 	y: player.y
 }
 
+var lineStart = {
+	x: player.x,
+	y: player.y
+}
+
 var target = {x:0,y:0};
 
 var trails = [];
@@ -255,17 +260,17 @@ function update(delta) {
 	}
 
 	if(target.x != 0 && target.y != 0) {
-		if(target.x > player.x+10) {
+		if(target.x > player.x+15) {
 			player.x += velocity * delta;
 		}
-		else if(target.x < player.x-10) {
+		else if(target.x < player.x-15) {
 			player.x -= velocity * delta;
 		}
 
-		if(target.y > player.y+10) {
+		if(target.y > player.y+15) {
 			player.y += velocity * delta;
 		}
-		else if(target.y < player.y-10) {
+		else if(target.y < player.y-15) {
 			player.y -= velocity * delta;
 
 		}
@@ -345,7 +350,7 @@ function draw() {
 		context.lineTo(trail.x2, trail.y2);
 	}
 	context.moveTo(lineStart.x, lineStart.y);
-	context.lineTo(player.x + 15 + player.xoff, player.y + 15 + player.yoff);
+	context.lineTo(player.x + 15, player.y + 15);
 	context.stroke();
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
