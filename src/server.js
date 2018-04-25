@@ -3,6 +3,50 @@ var http = require('http');
 var path = require('path');
 var socketIO = require('socket.io');
 
+//var game = require('./client/game/gameFunctions.js');
+var firebase = require("firebase/app")
+require("firebase/database");
+var config = {
+    apiKey: "AIzaSyAiDkGOGaAkRTTYameiQFJUNMjdOS6ONNc",
+    authDomain: "cs252-lab6-2018.firebaseapp.com",
+    databaseURL: "https://cs252-lab6-2018.firebaseio.com",
+    projectId: "cs252-lab6-2018",
+    storageBucket: "cs252-lab6-2018.appspot.com",
+    messagingSenderId: "8737404167"
+  };
+firebase.initializeApp(config);
+
+function removePlayer(gameID, socketID) {
+    firebase.database().ref('games/' + gameID + '/players/' + socketID).remove()
+}
+
+function closeGame (gameID) {
+    firebase.database().ref('games/' + gameID).update({
+        isOpen: false,
+    });
+}
+
+function getMaxPlayers(gameID) {
+	firebase.database().ref('games/' + gameID).once('value', function(data) {
+		if(data.val() == null) {
+			return;
+		}
+		else {
+			console.log("Room: " + gameID);
+			console.log("Players: " + data.val().maxPlayers);
+			games[room].maxplayers = parseInt(data.val().maxPlayers);
+		}
+	})
+}
+
+function openGame (gameID) {
+
+    firebase.database().ref('games/' + gameID).update({
+        isOpen: true,
+    });
+    firebase.database().ref('games/' + gameID + '/players').remove()
+}
+
 var app = express();
 var server = http.Server(app);
 var io = socketIO(server);
@@ -32,44 +76,61 @@ server.listen(PORT, function() {
 	console.log('Server has begun on port ' + PORT);
 });
 
-var players = {};
-var sentplayers = {};
-var trails = [];
-var maxplayers = 2;
-var deadplayers = 0;
-var lines = {};
+var games = {}
 var offset = 150;
 
-io.on('connection', function(socket) {
+io.on('connection', async function(socket) {
 	socket.join(room);
-	socket.emit('socketID', socket.id);
+	if(games[room] == null) {
+		console.log("----CREATING A GAME----");
+		games[room] = {
+			players : {},
+			sentplayers : {},
+			trails : [],
+			maxplayers : 2,
+			deadplayers : 0,
+			lines : {}
+		}
+		await getMaxPlayers(room);
+	}
 
-	socket.on('new player', function() {
+	console.log("----MAXPLAYERS----\n" + games[room].maxplayers);
+	var game = {
+		id: socket.id,
+		gameID: room
+	}
+	socket.emit('socketID', game);
+
+	socket.on('new player', async function(data) {
 
 
-		players[socket.id] = {
-			x: offset * (Object.keys(players).length + 1),
+		games[room].players[socket.id] = {
+			id: data.id,
+			x: offset * (Object.keys(games[room].players).length + 1),
 			y: 100,
 			velocity: .15,
-			direction: ""
+			direction: "",
+			isDead: false
 		}
 
-		sentplayers[socket.id] = {
-			x: offset * (Object.keys(players).length + 1),
+		games[room].sentplayers[socket.id] = {
+			x: offset * (Object.keys(games[room].players).length + 1),
 			y: 100,
 			h: Math.floor(Math.random() * 6), 
-			i: 2
+			i: 2,
+			u: data.username
 		}
 
-		lines[socket.id] = {
-			x: players[socket.id].x + 15,
-			y: players[socket.id].y + 15,
+		games[room].lines[socket.id] = {
+			x: games[room].players[socket.id].x + 15,
+			y: games[room].players[socket.id].y + 15,
 		}
-		io.sockets.in(room).emit('newconnect', sentplayers);
+		await io.sockets.in(room).emit('newconnect', games[room].sentplayers);
 		console.log('new player connected');
-		console.log(players);
+		console.log(games[room].players);
 
-		if(Object.keys(players).length == maxplayers) {
+		if(Object.keys(games[room].players).length == games[room].maxplayers) {
+			closeGame(room);
 			io.sockets.in(room).emit('ready');
 			var timeleft = 3;
 			var downloadTimer = setInterval(function(){
@@ -83,73 +144,93 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('direction', function(data) {
-		var player = players[socket.id] || {};
-		player.direction = data.direction;
-		if(lines[socket.id] != "undefined") {
+		if(games[room] != null) {
+			var player = games[room].players[socket.id] || {};
+			player.direction = data.direction;
 			var line = {
-				x1: lines[socket.id].x,
-				y1: lines[socket.id].y,
+				x1: games[room].lines[socket.id].x,
+				y1: games[room].lines[socket.id].y,
 				x2: player.x + 15,
 				y2: player.y + 15,
 			}
-			trails.push(line);
+			//games[room].trails.push(line);
 			line.x1 += offset;
 			line.x2 += offset;
 
 			line.id = socket.id;
-			lines[socket.id].x = players[socket.id].x + 15;
-			lines[socket.id].y = players[socket.id].y + 15;
-			socket.broadcast.to(room).emit('trail', line);
+			games[room].lines[socket.id].x = games[room].players[socket.id].x + 15;
+			games[room].lines[socket.id].y = games[room].players[socket.id].y + 15;
+			io.sockets.in(room).emit('trail', line);
 		}
 	});
 
 	socket.on('disconnect', function () {
 	    io.in(room).emit('user disconnected');
 	    io.sockets.in(room).emit('disconnect', socket.id);
-	    delete players[socket.id];
-	    delete sentplayers[socket.id];
+	    if(games[room] != null) {
+	    	if(games[room].players[socket.id] != undefined) {
+	    		removePlayer(room, games[room].players[socket.id].id);
+	    	}
+	    	delete games[room].players[socket.id];
+	    	delete games[room].sentplayers[socket.id];
+		}
 	});
 
 	socket.on('collision', function() {
-		players[socket.id].velocity = 0;
-		deadplayers++;
-		if(deadplayers + 1 == maxplayers) {
-			io.sockets.in(room).emit('gameover');
-			for(var id in players) {
-				delete players[id];
-	    		delete sentplayers[id];
-	    		delete lines[id];
-	    		trails = [];
+		var winner;
+		if(games[room] != null && games[room].players != null) {
+			games[room].players[socket.id].velocity = 0;
+			games[room].players[socket.id].isDead = true;
+			games[room].deadplayers = 0;
+			for(var id in games[room].players) {
+				if(games[room].players[id].isDead) {
+					games[room].deadplayers++;
+				}
+				else {
+					winner = games[room].sentplayers[id].u;
+				}
+			}
+
+			if(games[room].deadplayers + 1 >= games[room].maxplayers) {
+				io.sockets.in(room).emit('gameover', winner);
+				openGame(room);
+				for(var id in games[room].players) {
+					if(games[room] != null) {
+						delete games[room];
+		    		}
+				}
 			}
 		}
 	});
 });
 
 function update(delta) {
-	for (var id in players) {
-		var player = players[id];
-		var sentplayer = sentplayers[id];
-		if(player.direction == "l") {
-			player.x -= player.velocity * delta;
-			sentplayer.x -= player.velocity * delta;
-			sentplayer.i = 3;
-		}
-		else if(player.direction == "r") {
-			player.x += player.velocity * delta;
-			sentplayer.x += player.velocity * delta;
-			sentplayer.i = 1; 
-		}
-		else if(player.direction == "u") {
-			player.y -= player.velocity * delta;
-			sentplayer.y -= player.velocity * delta;
-			sentplayer.i = 0;
-		}
-		else if(player.direction == "d") {
-			player.y += player.velocity * delta;
-			sentplayer.y += player.velocity * delta;
-			sentplayer.i = 2;
-		}
+	if(games[room] != null) {
+		for (var id in games[room].players) {
+			var player = games[room].players[id];
+			var sentplayer = games[room].sentplayers[id];
+			if(player.direction == "l") {
+				player.x -= player.velocity * delta;
+				sentplayer.x -= player.velocity * delta;
+				sentplayer.i = 3;
+			}
+			else if(player.direction == "r") {
+				player.x += player.velocity * delta;
+				sentplayer.x += player.velocity * delta;
+				sentplayer.i = 1; 
+			}
+			else if(player.direction == "u") {
+				player.y -= player.velocity * delta;
+				sentplayer.y -= player.velocity * delta;
+				sentplayer.i = 0;
+			}
+			else if(player.direction == "d") {
+				player.y += player.velocity * delta;
+				sentplayer.y += player.velocity * delta;
+				sentplayer.i = 2;
+			}
 
+		}
 	}
 }
 
@@ -164,7 +245,9 @@ function gameLoop() {
 
 setInterval(function() {
 	gameLoop();
-	io.sockets.in(room).emit('state', sentplayers);
+	if(games[room] != null) {
+		io.sockets.in(room).emit('state', games[room].sentplayers);
+	}
 }, 1000/15);
 
 

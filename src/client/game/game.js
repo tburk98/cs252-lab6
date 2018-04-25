@@ -1,14 +1,5 @@
 var socket = io({transports: ['websocket'], upgrade: false});
-
-var config = {
-    apiKey: "AIzaSyAiDkGOGaAkRTTYameiQFJUNMjdOS6ONNc",
-    authDomain: "cs252-lab6-2018.firebaseapp.com",
-    databaseURL: "https://cs252-lab6-2018.firebaseio.com",
-    projectId: "cs252-lab6-2018",
-    storageBucket: "cs252-lab6-2018.appspot.com",
-    messagingSenderId: "8737404167"
-  };
-firebase.initializeApp(config);
+login();
 
 var lastdir, currdir;
 
@@ -17,7 +8,7 @@ var changeDirection = {
 	time: Date.now()
 }
 
-var delta, lastFrameTimeMs, velocity;
+var delta, lastFrameTimeMs, velocity, gameID;
 velocity = .15;
 
 var players = {};
@@ -29,26 +20,35 @@ var player = {
 	id: 0,
 	x: 0,
 	y: 0,
-	velocity: .15,
+	velocity: 0,
 	i: 2,
-	h: 0
+	h: 0,
+	u: "",
 }
 var camera = {
 	x: player.x,
 	y: player.y
 }
 
+var lineStart = {
+	x: player.x,
+	y: player.y
+}
+
+var target = {x:0,y:0};
+
 var trails = [];
 var othertrails = [];
 var trailColors = ["white", "blue", "red", "purple", "yellow", "green"];
 var currtrails = {};
 var inputDisabled = true;
+var gameDisabled = false;
 var timeleft = 4;
 var gameOver = "";
 
 var img = [];
 var bg = new Image();
-bg.src = 'https://d1yn1kh78jj1rr.cloudfront.net/image/preview/rDtN98Qoishumwih/mintandgraypaper-13-091815-810_SB_PM.jpg';
+bg.src = "../assets/NORTbackground.jpg";
 var snail = new Image();
 for(var i = 1; i < 7; i++) {
 	img[i-1] = new Image();
@@ -64,23 +64,54 @@ socket.on('state', function(newplayers) {
 				targets[id].y = newplayers[id].y;
 				players[id].i = newplayers[id].i;
 			}
+			else {
+				target.x = newplayers[id].x;
+				target.y = newplayers[id].y;
+			}
 		}
 	}
 })
 
 socket.on('trail', function(trail) {
 
-	othertrails.push(trail)
 
 	if(trail.id != player.id) {
 		lineStarts[trail.id].x = trail.x2;
 		lineStarts[trail.id].y = trail.y2;
+		othertrails.push(trail);
+	}
+	else {
+		trails.push(trail);
+		lineStart.x = trail.x2;
+		lineStart.y = trail.y2;
 	}
 })
 
-socket.on('socketID', function(id) {
-	console.log(id);
-	player.id = id;
+socket.on('socketID', async function(game) {
+	console.log(game);
+	player.id = game.id;
+	gameID = game.gameID;
+	
+	await joinGame(gameID).catch((err) => {
+        console.log("JOIN GAME ERROR: " + err);
+        alert(err);
+        window.location.href = "../join";
+    });
+    
+	console.log("joined game");
+
+	var data = {
+		id: getID(),
+		username: "player"
+	}
+
+	await getUsername().then((name) => {
+		console.log(name);
+		data.username = name;
+		console.log("username " + data.username);
+
+    	socket.emit('new player', data);
+	});
 })
 
 socket.on('newconnect', function(newplayers) {
@@ -101,6 +132,7 @@ socket.on('newconnect', function(newplayers) {
 				player.x = newplayers[id].x;
 				player.y = newplayers[id].y;
 				player.h = newplayers[id].h;
+				player.u = newplayers[id].u;
 				lineStart.x = player.x + 15;
 				lineStart.y = player.y + 15;
 				drawTrail = true;
@@ -127,15 +159,14 @@ socket.on('ready', function() {
 
 socket.on('start', function() {
 	inputDisabled = false;
+	player.velocity = .15;
 })
 
-socket.on('gameover', function() {
-	gameOver = "Game Over!";
+socket.on('gameover', function(winner) {
+	gameOver = "Game Over!\n" + winner + " wins!";
 	player.velocity = 0;
 	inputDisabled = true;
 })
-
-socket.emit('new player');
 
 var canvas = document.getElementById('canvas');
 var context = canvas.getContext('2d'); 
@@ -156,21 +187,25 @@ document.addEventListener('keydown', function(event) {
 			case 65: // A
 		      if(currdir != "r") {
 	 		    currdir = "l";
+	 		    player.i = 3;
 		      }
 		      break;
 		    case 87: // W
 		      if(currdir != "d") {
 	 		    currdir = "u";
+	 		    player.i = 0;
 		      }
 		      break;
 		    case 68: // D
 		      if(currdir != "l") {
 	 		    currdir = "r";
+	 		    player.i = 1;
 		      }
 		      break;
 		    case 83: // S
 		      if(currdir != "u") {
 	 		    currdir = "d";
+	 		    player.i = 2;
 		      }
 		      break;
 		}
@@ -183,7 +218,7 @@ document.addEventListener('keydown', function(event) {
 			changeDirection.time = Date.now();
 			changeDirection.direction = currdir;
 			socket.emit('direction', changeDirection);
-			drawLine(player.x + 15, player.y + 15);
+			//drawLine(player.x + 15, player.y + 15);
 		}
 	}
 })
@@ -224,6 +259,23 @@ function update(delta) {
 		}
 	}
 
+	if(target.x != 0 && target.y != 0) {
+		if(target.x > player.x+15) {
+			player.x += velocity * delta;
+		}
+		else if(target.x < player.x-15) {
+			player.x -= velocity * delta;
+		}
+
+		if(target.y > player.y+15) {
+			player.y += velocity * delta;
+		}
+		else if(target.y < player.y-15) {
+			player.y -= velocity * delta;
+
+		}
+	}
+
 	if(currdir == "l") {
 		player.x -= player.velocity * delta;
 		player.i = 3;
@@ -244,14 +296,11 @@ function update(delta) {
 	if(player.velocity > 0) {
 		for(var i = 0; i < trails.length - 2; i++) {
 			var trail = trails[i];
-			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-					player.velocity = 0;
-					//console.log("COLLISION");
-					console.log('COLLISION');
-					socket.emit('collision');
-				}
-			//}
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				player.velocity = 0;
+				console.log('COLLISION');
+				socket.emit('collision', player.id);
+			}
 		}
 
 		
@@ -260,20 +309,18 @@ function update(delta) {
 			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
 				player.velocity = 0;
 				console.log('COLLISION');
-				socket.emit('collision');
+				socket.emit('collision', player.id);
 			}
 		}
-		//console.log(currtrails);
+
 		for(var i in currtrails) {
 			var trail = currtrails[i];
-			//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-				if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
-					player.velocity = 0;
-					console.log('COLLISION');
-					socket.emit('collision');
+			if(isColliding(trail.x1, trail.y1, trail.x2, trail.y2)) {
+				player.velocity = 0;
+				console.log('COLLISION');
+				socket.emit('collision', player.id);
 
-				}
-			//}
+			}
 		}
 	}
 }
@@ -287,27 +334,28 @@ function draw() {
 	context.setTransform(1,0,0,1,-camera.x * scale, -camera.y * scale);
 	
 	context.scale(scale, scale);
-	var pat=context.createPattern(bg,"repeat");
-
-	context.fillStyle = "#202d3a";
-	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
+	//var pat=context.createPattern(bg,"repeat");
 	
+	//context.fillStyle = "#202d3a";
+	
+	context.fillRect(camera.x,camera.y,canvas.width, canvas.height);
+	context.drawImage(bg, 0, 0);
 
 	context.beginPath();
 	context.strokeStyle = trailColors[player.h]
 	context.lineWidth = 3;
 	for(var i = 0; i < trails.length; i++) {
 		var trail = trails[i];
-		//if(inView(trail.x1, trail.y1) || inView(trail.x2, trail.y2)) {
-			context.moveTo(trail.x1, trail.y1);
-			context.lineTo(trail.x2, trail.y2);
-		//}
+		context.moveTo(trail.x1, trail.y1);
+		context.lineTo(trail.x2, trail.y2);
 	}
 	context.moveTo(lineStart.x, lineStart.y);
 	context.lineTo(player.x + 15, player.y + 15);
 	context.stroke();
 
 	context.drawImage(img[player.h],player.i * 32,0,32,32,player.x,player.y,32,32);
+	context.fillStyle = "white";
+	context.fillText(player.u, player.x + 15, player.y + 40);
 	
 
 	for(var id in players) {
@@ -317,7 +365,6 @@ function draw() {
 			var trail = othertrails[i];
 				context.beginPath();
 				context.strokeStyle = trailColors[players[trail.id].h]
-				console.log(trailColors[players[trail.id].h]);
 				context.moveTo(trail.x1, trail.y1);
 				context.lineTo(trail.x2, trail.y2);
 				context.stroke();
@@ -334,13 +381,15 @@ function draw() {
 		}
 		context.stroke();
 		context.drawImage(img[players[id].h],players[id].i * 32,0,32,32,players[id].x,players[id].y,32,32);
+		context.fillStyle = "white";
+		context.fillText(players[id].u, players[id].x + 15, players[id].y + 40);
 	}
 
 
 	context.translate(camera.x, camera.y);
 
 	sendMessage();
-
+	
 
 }
 
@@ -384,7 +433,7 @@ function inView(x, y) {
 }
 
 function sendMessage() {
-	context.fillStyle = "black";
+	context.fillStyle = "white";
 	if(timeleft == 4) {
 		context.fillText("Waiting for other players...", canvas.width/2, canvas.height/2);
 	}
