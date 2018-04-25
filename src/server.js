@@ -27,6 +27,19 @@ function closeGame (gameID) {
     });
 }
 
+function getMaxPlayers(gameID) {
+	firebase.database().ref('games/' + gameID).once('value', function(data) {
+		if(data.val() == null) {
+			return;
+		}
+		else {
+			console.log("Room: " + gameID);
+			console.log("Players: " + data.val().maxPlayers);
+			games[room].maxplayers = parseInt(data.val().maxPlayers);
+		}
+	})
+}
+
 function openGame (gameID) {
 
     firebase.database().ref('games/' + gameID).update({
@@ -71,9 +84,10 @@ memwatch.on('leak', (info) => {
 var games = {}
 var offset = 150;
 
-io.on('connection', function(socket) {
+io.on('connection', async function(socket) {
 	socket.join(room);
 	if(games[room] == null) {
+		console.log("----CREATING A GAME----");
 		games[room] = {
 			players : {},
 			sentplayers : {},
@@ -82,7 +96,10 @@ io.on('connection', function(socket) {
 			deadplayers : 0,
 			lines : {}
 		}
+		await getMaxPlayers(room);
 	}
+
+	console.log("----MAXPLAYERS----\n" + games[room].maxplayers);
 	var game = {
 		id: socket.id,
 		gameID: room
@@ -93,18 +110,20 @@ io.on('connection', function(socket) {
 
 
 		games[room].players[socket.id] = {
-			id: data,
+			id: data.id,
 			x: offset * (Object.keys(games[room].players).length + 1),
 			y: 100,
 			velocity: .15,
-			direction: ""
+			direction: "",
+			isDead: false
 		}
 
 		games[room].sentplayers[socket.id] = {
 			x: offset * (Object.keys(games[room].players).length + 1),
 			y: 100,
 			h: Math.floor(Math.random() * 6), 
-			i: 2
+			i: 2,
+			u: data.username
 		}
 
 		games[room].lines[socket.id] = {
@@ -146,7 +165,7 @@ io.on('connection', function(socket) {
 			line.id = socket.id;
 			games[room].lines[socket.id].x = games[room].players[socket.id].x + 15;
 			games[room].lines[socket.id].y = games[room].players[socket.id].y + 15;
-			socket.broadcast.to(room).emit('trail', line);
+			io.sockets.in(room).emit('trail', line);
 		}
 	});
 
@@ -163,17 +182,28 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('collision', function() {
-		if(games[room].players != null) {
+		var winner;
+		if(games[room] != null && games[room].players != null) {
 			games[room].players[socket.id].velocity = 0;
-			games[room].deadplayers++;
-		}
-		if(games[room].deadplayers + 1 == games[room].maxplayers) {
-			io.sockets.in(room).emit('gameover');
-			openGame(room);
+			games[room].players[socket.id].isDead = true;
+			games[room].deadplayers = 0;
 			for(var id in games[room].players) {
-				if(games[room] != null) {
-					delete games[room];
-	    		}
+				if(games[room].players[id].isDead) {
+					games[room].deadplayers++;
+				}
+				else {
+					winner = games[room].sentplayers[id].u;
+				}
+			}
+
+			if(games[room].deadplayers + 1 >= games[room].maxplayers) {
+				io.sockets.in(room).emit('gameover', winner);
+				openGame(room);
+				for(var id in games[room].players) {
+					if(games[room] != null) {
+						delete games[room];
+		    		}
+				}
 			}
 		}
 	});
