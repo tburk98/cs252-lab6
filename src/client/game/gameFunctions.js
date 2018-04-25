@@ -14,8 +14,6 @@ const dbRef = firebase.database().ref().child('games')
 
 var uid;
 
-//dbRef.on('value', data => console.log(data.val()))
-
 function getID() {
     return uid;
 }
@@ -25,7 +23,7 @@ async function getUsername() {
     var name;
     await firebase.database().ref('users/' + uid).once('value', function(data) {
         if(data.val() != null && data.val().username != null) {
-            console.log(data.val().username);
+            console.log(data.val());
             name = data.val().username;
         }
         else {
@@ -58,7 +56,7 @@ function createGame (gameID, numOfPlayers) {
                 wins: 0,
             })*/
             console.log("Game created!");
-            window.location.href = "game/" + gameID;
+            window.location.href = "../game/" + gameID;
             return false;
         }
         else {
