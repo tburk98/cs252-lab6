@@ -8,6 +8,7 @@
 	<link href="https://fonts.googleapis.com/css?family=Montserrat:700" rel="stylesheet">
 </head>
 <body>
+	
 	<div id="main">
 		
 		<div class="logoContainer">
@@ -25,19 +26,25 @@
 		</div>
 		
 	</div>
+	
 </body>
-	<script>
+	
+	<script type="text/javascript">
 		var table = '';
 		var rows = 10;
 		for(var r = 0; r < rows; r++) {
 			table += '<tr>';
 				table += '<td>' + r + '</td>';
-				table += '<td>' + 'button' + '</td>';
+				table += '<td>' + '<button type="button" class="joinBttn" id='+r+' onClick="join(this.id)">Join</button></td>';
 			table += '</tr>';
 		}
 	
 		var div = document.getElementById('TBL');
-		div.innerHTML += '<table class="table"><tr><th>Game ID</th></tr>' + table + '</table>';
+		div.innerHTML += '<table class="table"><tr><th>Game ID</th><th>Join button</th></tr>' + table + '</table>';
+		
+		function join(ID) {
+			alert(ID);
+		}
 	</script>
 	
 </html>

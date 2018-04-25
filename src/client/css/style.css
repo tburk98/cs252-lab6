@@ -152,12 +152,25 @@ h3 {
 
 table, td, th {
   border-collapse: collapse;
-  border: 1px solid white;
-  text-align: center; }
+  border-bottom: 1px solid white;
+  text-align: center;
+  padding-left: 10px; }
 
 tr {
-  height: 40px;
+  height: 60px;
   font-family: 'Montserrat', sans-serif;
   color: white;
   font-size: 12pt;
   font-weight: 400; }
+
+.joinBttn {
+  background-color: #202d3a;
+  outline-color: rgba(0, 0, 0, 0);
+  outline: none;
+  color: white;
+  height: 40px;
+  width: 120px;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12pt; }
