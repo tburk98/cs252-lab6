@@ -3,7 +3,6 @@ var http = require('http');
 var path = require('path');
 var socketIO = require('socket.io');
 
-const memwatch = require('memwatch-next');
 //var game = require('./client/game/gameFunctions.js');
 var firebase = require("firebase/app")
 require("firebase/database");
@@ -75,10 +74,6 @@ app.get('/game/:id', function(request, response) {
 
 server.listen(PORT, function() {
 	console.log('Server has begun on port ' + PORT);
-});
-
-memwatch.on('leak', (info) => {
-  console.error('Memory leak detected:\n', info);
 });
 
 var games = {}
